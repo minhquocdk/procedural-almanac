@@ -10,6 +10,34 @@ import * as almanac from '../../src/index.js';
 
 const TAU = Math.PI * 2;
 
+// Every call this file makes into the almanac goes through A, which counts the technique into whichever book is
+// being drawn (activeUsed) -- the same ledger the island film keeps, so a book's `used` set and its report() can
+// say honestly what the story needed, figures and props included. The wrappers are made once, here, not per book.
+let activeUsed = null;
+const counted = new Map();
+const A = new Proxy(almanac, {
+  get(target, name) {
+    const f = target[name];
+    if (typeof f !== 'function' || typeof name !== 'string') return f;
+    if (!counted.has(name))
+      counted.set(
+        name,
+        /^[A-Z]/.test(name)
+          ? class extends f {
+              constructor(...a) {
+                super(...a);
+                if (activeUsed) activeUsed.add(name);
+              }
+            }
+          : (...a) => {
+              if (activeUsed) activeUsed.add(name);
+              return f(...a);
+            },
+      );
+    return counted.get(name);
+  },
+});
+
 // ---------------------------------------------------------------------------------------------- the cast's body plans
 // Every animal is the same figure, parameterised: a body, a head, a snout, ears, a tail and legs that step. A kind
 // gives the defaults; genes (drawn from the seed with genomeFrom) vary size, coat and legs within the kind's ranges.
@@ -23,6 +51,7 @@ const KINDS = {
     ear: 'flop',
     earLen: 1.7,
     tail: 'curl',
+    spots: 3,
     gait: 'walk',
     coat: '#eda6a6',
     genes: { size: [30, 38], coat: ['#eda6a6', '#e29494', '#f2b8b2'], legs: [3.1, 3.8] },
@@ -36,6 +65,7 @@ const KINDS = {
     ear: 'point',
     earLen: 2.1,
     tail: 'bushy',
+    saddle: true,
     gait: 'trot',
     coat: '#8d93a3',
     genes: { size: [36, 46], coat: ['#8d93a3', '#7a8090', '#a0a5b3'], legs: [3.3, 4.0] },
@@ -49,6 +79,7 @@ const KINDS = {
     ear: 'point',
     earLen: 2.3,
     tail: 'bushy',
+    belly: true,
     gait: 'trot',
     coat: '#d9784a',
     genes: { size: [28, 36], coat: ['#d9784a', '#c9683c', '#e68a5c'], legs: [2.8, 3.4] },
@@ -62,6 +93,7 @@ const KINDS = {
     ear: 'round',
     earLen: 1.8,
     tail: 'thin',
+    spots: 2,
     gait: 'walk',
     coat: '#b8a89a',
     genes: { size: [14, 20], coat: ['#b8a89a', '#a8988a', '#c8b8a8'], legs: [1.5, 2.0] },
@@ -183,10 +215,10 @@ const EFFECT_KINDS = new Set([
 const HOUSE_STYLES = new Set(['straw', 'wood', 'stone']);
 
 // ---------------------------------------------------------------------------------------------- colours, buffers
-const rgbOf = (h) => (typeof h === 'string' ? almanac.hexToRgb(h) : h);
-const pack = (c) => almanac.packRgb(c[0], c[1], c[2]);
+const rgbOf = (h) => (typeof h === 'string' ? A.hexToRgb(h) : h);
+const pack = (c) => A.packRgb(c[0], c[1], c[2]);
 const hex = (h) => pack(rgbOf(h));
-const shadeOf = (h, k) => pack(almanac.shade(rgbOf(h), k));
+const shadeOf = (h, k) => pack(A.shade(rgbOf(h), k));
 const buffer = (w, h) => ({
   w: Math.max(1, w | 0),
   h: Math.max(1, h | 0),
@@ -212,13 +244,13 @@ function painter(B, k, ax, ay) {
       if (px >= 0 && py >= 0 && px < B.w && py < B.h) B.px[py * B.w + px] = c;
     };
   return {
-    ell: (x, y, rx, ry, c) => almanac.fillEllipse(B, X(x), Y(y), Math.max(0.1, rx * k), Math.max(0.1, ry * k), c),
+    ell: (x, y, rx, ry, c) => A.fillEllipse(B, X(x), Y(y), Math.max(0.1, rx * k), Math.max(0.1, ry * k), c),
     cap: (x1, y1, r1, x2, y2, r2, c) =>
-      almanac.capsuleSteps(X(x1), Y(y1), Math.max(0.1, r1 * k), X(x2), Y(y2), Math.max(0.1, r2 * k), (px, py, r) =>
-        almanac.fillEllipse(B, px, py, r, r, c),
+      A.capsuleSteps(X(x1), Y(y1), Math.max(0.1, r1 * k), X(x2), Y(y2), Math.max(0.1, r2 * k), (px, py, r) =>
+        A.fillEllipse(B, px, py, r, r, c),
       ),
     poly: (pts, c) =>
-      almanac.polygonRows(
+      A.polygonRows(
         pts.map(([x, y]) => [X(x), Y(y)]),
         B.h,
         (y, xa, xb) => {
@@ -226,7 +258,7 @@ function painter(B, k, ax, ay) {
         },
       ),
     line: (x1, y1, x2, y2, c) =>
-      almanac.lineCells(X(x1), Y(y1), X(x2), Y(y2), (x, y) => {
+      A.lineCells(X(x1), Y(y1), X(x2), Y(y2), (x, y) => {
         if (x >= 0 && y >= 0 && x < B.w && y < B.h) B.px[y * B.w + x] = c;
       }),
     px: P,
@@ -242,7 +274,7 @@ function figureAt(kind, genes, phase, inkHex) {
   if (kind === 'dragon') return dragonAt(genes, phase, inkHex);
   if (kind === 'fairy') return fairyAt(genes, phase, inkHex);
   const K = KINDS[kind],
-    T = almanac.tones(rgbOf(genes.coat)),
+    T = A.tones(rgbOf(genes.coat)),
     base = pack(T.base),
     light = pack(T.light),
     dark = pack(T.dark),
@@ -280,11 +312,11 @@ function figureAt(kind, genes, phase, inkHex) {
           [bRy * 0.4, legLen * 0.9],
           [-bRy * 0.4, legLen * 0.9],
         ];
-  const timing = almanac.gaitTiming(K.gait),
+  const timing = A.gaitTiming(K.gait),
     far = K.stance === 'quad' ? [timing[0].far, timing[1].far] : [timing[0].far],
     near = K.stance === 'quad' ? [timing[0].near, timing[1].near] : [timing[0].near];
   const leg = (hip, off, colour) => {
-    const s = almanac.footStep(phase + off, 0.55 * legLen, 0.34 * legLen);
+    const s = A.footStep(phase + off, 0.55 * legLen, 0.34 * legLen);
     p.cap(hip[0], hip[1], legR, hip[0] + s.x, s.y + 0.2, legR * 0.85, colour);
     p.ell(hip[0] + s.x + 0.15, s.y + 0.15, legR * 1.05, legR * 0.72, colour);
   };
@@ -315,6 +347,18 @@ function figureAt(kind, genes, phase, inkHex) {
   // the body and its light side
   p.ell(0, cy, bRx, bRy, base);
   p.ell(-bRx * 0.22, cy + bRy * 0.34, bRx * 0.62, bRy * 0.42, light);
+  // its markings: a dark saddle, a pale belly, mud or dappling -- placed by the coat, never by the phase, so a
+  // spot does not swim while the legs move
+  if (K.saddle) p.ell(-bRx * 0.08, cy + bRy * 0.52, bRx * 0.72, bRy * 0.34, dark);
+  if (K.belly) p.ell(bRx * 0.08, cy - bRy * 0.42, bRx * 0.66, bRy * 0.4, shadeOf(genes.coat, 0.55));
+  if (K.spots) {
+    let sc = 7;
+    for (const ch of genes.coat) sc = (sc * 31 + ch.charCodeAt(0)) | 0;
+    const spots = A.bodySpots(new A.SeededRandom(sc), 0, 100, K.spots),
+      spotCol = A.mixPacked(base, dark, 0.55);
+    for (const q of spots)
+      p.ell(q.dx * bRx, cy + q.dy * bRy, Math.max(0.3, q.r * bRx * 0.26), Math.max(0.3, q.r * bRy * 0.3), spotCol);
+  }
   if (K.wing) p.ell(-bRx * 0.1, cy - bRy * 0.15, bRx * 0.72, bRy * 0.5, dark);
 
   // the head, ears, snout and eye
@@ -370,7 +414,7 @@ function figureAt(kind, genes, phase, inkHex) {
   // the near legs, over the body
   for (let i = 0; i < near.length; i++) leg(hips[K.stance === 'quad' ? i : 0], near[i], shadeOf(genes.coat, -0.1));
 
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   return { w: W, h: H, px: B.px, ax: (W - 1) / 2, ay: H - 2, stride: 0.55 * legLen * k, lift: 0.34 * legLen * k };
 }
 
@@ -379,7 +423,7 @@ function figureAt(kind, genes, phase, inkHex) {
 // pictures are a ripple, not a walk. Everything is sized so the silhouette reads small: a thin wave, a big head, a fan.
 function dragonAt(genes, phase, inkHex) {
   const coat = genes.coat,
-    T = almanac.tones(rgbOf(coat)),
+    T = A.tones(rgbOf(coat)),
     base = pack(T.base),
     light = pack(T.light),
     dark = pack(T.dark),
@@ -495,7 +539,7 @@ function dragonAt(genes, phase, inkHex) {
   leg(along(0.36), shadeOf(coat, -0.06));
   leg(along(0.78), shadeOf(coat, -0.06));
 
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   // (an anchor has to be a whole pixel: a stamp at a fractional one lands between pixels and draws nothing)
   return { w: W, h: H, px: B.px, ax: W >> 1, ay: H - 2, stride: 1, air: true };
 }
@@ -507,7 +551,7 @@ function fairyAt(genes, phase, inkHex) {
     skin = genes.skin || KINDS.fairy.skin,
     hair = genes.hair || KINDS.fairy.hair,
     wing = genes.wing || KINDS.fairy.wing,
-    T = almanac.tones(rgbOf(coat)),
+    T = A.tones(rgbOf(coat)),
     base = pack(T.base),
     light = pack(T.light),
     dark = pack(T.dark),
@@ -615,7 +659,7 @@ function fairyAt(genes, phase, inkHex) {
   p.px(0.36, headY - 0.05, ink);
   p.px(0.5, headY - 0.34, shadeOf(skin, -0.32));
 
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   // (an anchor has to be a whole pixel: a stamp at a fractional one lands between pixels and draws nothing)
   return { w: W, h: H, px: B.px, ax: W >> 1, ay: H - 2, stride: 1, air: true };
 }
@@ -634,26 +678,39 @@ function figureSheet(kind, genes, inkHex) {
 
 // ---------------------------------------------------------------------------------------------- props
 function buildTree(rng, size, pal) {
-  const w = Math.max(11, Math.round(size * 0.95)),
-    h = Math.max(14, Math.round(size * 1.2)),
+  const w = Math.max(13, Math.round(size * 1.05)),
+    h = Math.max(16, Math.round(size * 1.28)),
     B = buffer(w, h),
-    leaf = [shadeOf(pal.leaf, -0.3), hex(pal.leaf), shadeOf(pal.leaf, 0.14), shadeOf(pal.leaf, 0.34)];
-  almanac.barkTrunk(
-    B,
-    w >> 1,
-    Math.round(h * 0.42),
-    h - 2,
-    Math.max(2, Math.round(size * 0.09)),
-    [shadeOf(pal.bark, -0.22), hex(pal.bark)],
-    Math.round(size * 0.05),
-  );
-  almanac.leafCrown(B, rng, w >> 1, Math.round(h * 0.34), Math.max(4, size * 0.33), Math.max(4, size * 0.3), leaf, {
-    bloom: pal.bloom ? hex(pal.bloom) : undefined,
-    bloomEvery: 13,
-    seed: rng.int(0, 9999),
-  });
-  almanac.outlinePass(B, hex(pal.ink));
-  return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
+    leaf = [shadeOf(pal.leaf, -0.3), hex(pal.leaf), shadeOf(pal.leaf, 0.14), shadeOf(pal.leaf, 0.34)],
+    bark = [shadeOf(pal.bark, -0.22), hex(pal.bark)],
+    cx = w >> 1,
+    crownY = Math.round(h * 0.36),
+    trunkTop = Math.round(h * 0.44);
+  A.barkTrunk(B, cx, trunkTop, h - 2, Math.max(2, Math.round(size * 0.09)), bark, Math.round(size * 0.05));
+  // branches reaching up into the crown, so the leaves hang on something
+  for (const sgn of [-1, 0, 1])
+    A.capsuleSteps(
+      cx,
+      trunkTop + 2,
+      Math.max(0.8, size * 0.035),
+      cx + sgn * size * 0.18,
+      crownY + (sgn ? size * 0.06 : -size * 0.08),
+      Math.max(0.5, size * 0.016),
+      (x, y, r) => A.fillEllipse(B, x, y, r, r, bark[0]),
+    );
+  // the crown in three overlapping billows, the way the island stacks its own, rather than one ball
+  const billow = (ox, oy, r) =>
+    A.leafCrown(B, rng, cx + ox, crownY + oy, Math.max(3.5, r), Math.max(3.5, r * 0.88), leaf, {
+      clumps: 5,
+      bloom: pal.bloom ? hex(pal.bloom) : undefined,
+      bloomEvery: 13,
+      seed: rng.int(0, 9999),
+    });
+  billow(-size * 0.16, size * 0.07, size * 0.24);
+  billow(size * 0.16, size * 0.07, size * 0.24);
+  billow(0, -size * 0.09, size * 0.28);
+  A.outlinePass(B, hex(pal.ink));
+  return { w, h, px: B.px, ax: cx, ay: h - 2 };
 }
 
 function buildBush(rng, size, pal) {
@@ -661,12 +718,17 @@ function buildBush(rng, size, pal) {
     h = Math.max(7, Math.round(size * 0.72)),
     B = buffer(w, h),
     leaf = [shadeOf(pal.leaf, -0.28), hex(pal.leaf), shadeOf(pal.leaf, 0.12), shadeOf(pal.leaf, 0.3)];
-  almanac.leafCrown(B, rng, w >> 1, h * 0.56, w * 0.42, h * 0.42, leaf, {
-    seed: rng.int(0, 9999),
-    bloom: pal.bloom ? hex(pal.bloom) : undefined,
-    bloomEvery: 9,
-  });
-  almanac.outlinePass(B, hex(pal.ink));
+  const hump = (cx, cy, rx, ry) =>
+    A.leafCrown(B, rng, cx, cy, rx, ry, leaf, {
+      clumps: 4,
+      seed: rng.int(0, 9999),
+      bloom: pal.bloom ? hex(pal.bloom) : undefined,
+      bloomEvery: 9,
+    });
+  hump(w * 0.34, h * 0.6, w * 0.3, h * 0.38);
+  hump(w * 0.66, h * 0.58, w * 0.3, h * 0.4);
+  hump(w * 0.5, h * 0.44, w * 0.26, h * 0.34);
+  A.outlinePass(B, hex(pal.ink));
   return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
 }
 
@@ -675,9 +737,20 @@ function buildRock(rng, size, pal) {
     h = Math.max(6, Math.round(size * 0.62)),
     B = buffer(w, h),
     grey = shadeOf(pal.stoneRoof, rng.range(-0.1, 0.1));
-  almanac.fillEllipse(B, w / 2, h - h * 0.3, w * 0.46, h * 0.5, grey);
-  almanac.shadeEllipse(B, w / 2, h - h * 0.2, w * 0.44, h * 0.42, 0.82);
-  almanac.outlinePass(B, hex(pal.ink));
+  A.fillEllipse(B, w / 2, h - h * 0.3, w * 0.46, h * 0.5, grey);
+  A.shadeEllipse(B, w / 2, h - h * 0.2, w * 0.44, h * 0.42, 0.82);
+  // a face that catches the light, and a crack down from it
+  A.fillEllipse(B, w * 0.38, h * 0.42, w * 0.2, h * 0.18, shadeOf(pal.stoneRoof, 0.22));
+  A.lineCells(
+    Math.round(w * (0.5 + rng.range(-0.08, 0.08))),
+    Math.round(h * 0.4),
+    Math.round(w * 0.56),
+    h - 3,
+    (x, y) => {
+      if (x >= 0 && y >= 0 && x < w && y < h && B.px[y * w + x]) B.px[y * w + x] = shadeOf(pal.stoneRoof, -0.3);
+    },
+  );
+  A.outlinePass(B, hex(pal.ink));
   return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
 }
 
@@ -686,11 +759,11 @@ function buildFlower(rng, size, pal) {
     h = Math.max(5, Math.round(size * 0.4)),
     B = buffer(w, h),
     stem = shadeOf(pal.ground, -0.34);
-  almanac.lineCells(w >> 1, h - 1, w >> 1, 2, (x, y) => {
+  A.lineCells(w >> 1, h - 1, w >> 1, 2, (x, y) => {
     if (x >= 0 && y >= 0 && x < w && y < h) B.px[y * w + x] = stem;
   });
   const petal = hex(pal.bloom || '#f6d1de');
-  almanac.fillEllipse(B, w >> 1, 2, 1.8, 1.8, petal);
+  A.fillEllipse(B, w >> 1, 2, 1.8, 1.8, petal);
   B.px[2 * w + (w >> 1)] = 0xff8fd0e0;
   return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
 }
@@ -716,6 +789,9 @@ function buildHouse(style, rng, size, pal) {
   if (style === 'stone')
     for (let y = top + 2; y < base; y += 4)
       for (let x = left + ((y >> 2) % 2 ? 2 : 4); x < right; x += 5) fillRect(B, x, y, x + 1, y, shadeOf(wall, -0.14));
+  // the wall in the roof's shadow at its top, and darker with damp at its foot
+  fillRect(B, left, top + 1, right, Math.min(base, top + 2), shadeOf(wall, -0.18));
+  fillRect(B, left, Math.max(top, base - 2), right, base, shadeOf(wall, -0.13));
   // the roof: its edge first, in the ink, then the roof inside it (so the silhouette is outlined, not its steps)
   const roofPts = (growY, growX) => [
       [Math.max(0, Math.round(w * 0.02)) - growX, top + 1 + growY],
@@ -723,7 +799,7 @@ function buildHouse(style, rng, size, pal) {
       [Math.min(w - 1, Math.round(w * 0.98)) + growX, top + 1 + growY],
     ],
     paintPoly = (pts, colour) =>
-      almanac.polygonRows(pts, h, (y, xa, xb) => {
+      A.polygonRows(pts, h, (y, xa, xb) => {
         if (xb >= xa) B.px.fill(colour, y * B.w + Math.max(0, xa), y * B.w + Math.min(B.w - 1, xb) + 1);
       });
   paintPoly(roofPts(1, 1), ink);
@@ -734,22 +810,59 @@ function buildHouse(style, rng, size, pal) {
     const half = halfAt(y);
     if (half > 1.2) fillRect(B, w / 2 - half + 1, y, w / 2 + half - 1, y, shadeOf(roof, -0.08));
   }
-  fillRect(B, left - 1, top, right + 1, top, ink);
-  const doorW = Math.max(4, Math.round(w * 0.17)),
-    doorX = Math.round(w * 0.3);
-  fillRect(B, doorX, base - Math.round(h * 0.26), doorX + doorW, base, shadeOf(roof, -0.4));
-  const win = [Math.round(w * 0.58), Math.round(h * 0.58)];
-  fillRect(B, win[0], win[1], win[0] + 4, win[1] + 4, hex(pal.window));
+  if (style === 'straw')
+    // the straws themselves, hanging down the slope
+    for (let n = 0; n < s * 0.9; n++) {
+      const y = Math.round(peak + 2 + rng.next() * Math.max(1, top - peak - 3)),
+        half = halfAt(y);
+      if (half < 1.6) continue;
+      const x = Math.round(w / 2 + (rng.next() * 2 - 1) * (half - 1));
+      fillRect(
+        B,
+        x,
+        y,
+        x,
+        Math.min(top - 1, y + 1 + (rng.next() > 0.5 ? 1 : 0)),
+        shadeOf(roof, rng.next() > 0.5 ? 0.1 : -0.16),
+      );
+    }
+  const chimX = Math.round(w * 0.66),
+    chimW = Math.max(2, Math.round(w * 0.075)),
+    chimTop = Math.round(peak + (top - peak) * 0.18 - h * 0.1),
+    chimY = Math.round(peak + (top - peak) * ((chimX - w / 2) / Math.max(1, w * 0.48)) * -1 + (top - peak) * 0.32);
   fillRect(
     B,
-    win[0] + (style === 'stone' ? 2 : 0),
-    win[1],
-    win[0] + (style === 'stone' ? 2 : 0),
-    win[1] + 4,
-    shadeOf(wall, -0.3),
+    chimX,
+    chimTop,
+    chimX + chimW,
+    Math.min(top, chimY + Math.round(h * 0.22)),
+    hex(style === 'straw' ? pal.wood : pal.stone),
   );
-  almanac.outlinePass(B, ink);
-  return { w, h, px: B.px, ax: w >> 1, ay: base, window: [win[0] + 2 - (w >> 1), win[1] + 2 - base] };
+  fillRect(B, chimX - 1, chimTop, chimX + chimW + 1, chimTop + 1, shadeOf(roof, -0.3));
+  fillRect(B, left - 1, top, right + 1, top, ink);
+  const doorW = Math.max(4, Math.round(w * 0.17)),
+    doorX = Math.round(w * 0.3),
+    doorTop = base - Math.round(h * 0.26);
+  fillRect(B, doorX - 1, doorTop - 1, doorX + doorW + 1, base, shadeOf(wall, -0.34));
+  fillRect(B, doorX, doorTop, doorX + doorW, base, shadeOf(roof, -0.4));
+  fillRect(B, doorX + 1, doorTop + 2, doorX + 1, base - 2, shadeOf(roof, -0.22));
+  B.px[(base - Math.round(h * 0.12)) * w + doorX + doorW - 1] = hex(pal.window);
+  fillRect(B, doorX - 1, base - 1, doorX + doorW + 1, base, hex(pal.stoneRoof));
+  const win = [Math.round(w * 0.58), Math.round(h * 0.58)];
+  fillRect(B, win[0] - 1, win[1] - 1, win[0] + 5, win[1] + 5, shadeOf(wall, -0.34));
+  fillRect(B, win[0], win[1], win[0] + 4, win[1] + 4, hex(pal.window));
+  fillRect(B, win[0] + 2, win[1], win[0] + 2, win[1] + 4, shadeOf(wall, -0.3));
+  fillRect(B, win[0], win[1] + 2, win[0] + 4, win[1] + 2, shadeOf(wall, -0.3));
+  A.outlinePass(B, ink);
+  return {
+    w,
+    h,
+    px: B.px,
+    ax: w >> 1,
+    ay: base,
+    window: [win[0] + 2 - (w >> 1), win[1] + 2 - base],
+    chimney: [chimX + (chimW >> 1) - (w >> 1), chimTop - base],
+  };
 }
 
 function buildCloud(rng, size, pal) {
@@ -761,7 +874,7 @@ function buildCloud(rng, size, pal) {
   const n = 3 + (rng.next() > 0.5 ? 1 : 0);
   for (let i = 0; i < n; i++) {
     const t = n === 1 ? 0.5 : i / (n - 1);
-    almanac.fillEllipse(
+    A.fillEllipse(
       B,
       w * (0.18 + 0.64 * t),
       h * (0.6 - 0.12 * Math.sin(t * Math.PI)),
@@ -770,8 +883,8 @@ function buildCloud(rng, size, pal) {
       body,
     );
   }
-  almanac.shadeEllipse(B, w / 2, h * 0.78, w * 0.44, h * 0.24, 0.94);
-  almanac.fillEllipse(B, w / 2, h * 0.9, w * 0.4, h * 0.14, shade);
+  A.shadeEllipse(B, w / 2, h * 0.78, w * 0.44, h * 0.24, 0.94);
+  A.fillEllipse(B, w / 2, h * 0.9, w * 0.4, h * 0.14, shade);
   return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
 }
 
@@ -788,7 +901,7 @@ function buildPalm(rng, size, pal) {
     topX = w * 0.42 + lean,
     topY = Math.round(h * 0.24),
     footY = h - 2;
-  almanac.barkTrunk(
+  A.barkTrunk(
     B,
     w * 0.42,
     topY,
@@ -803,21 +916,21 @@ function buildPalm(rng, size, pal) {
       len = size * (0.42 + rng.next() * 0.14),
       ex = topX + Math.cos(a) * len,
       ey = topY + Math.sin(a) * len * 0.55 + len * 0.28;
-    almanac.capsuleSteps(topX, topY, size * 0.075, ex, ey, size * 0.03, (x, y, r) =>
-      almanac.fillEllipse(B, x, y, r, r * 0.8, i % 2 ? leaf : leafDark),
+    A.capsuleSteps(topX, topY, size * 0.075, ex, ey, size * 0.03, (x, y, r) =>
+      A.fillEllipse(B, x, y, r, r * 0.8, i % 2 ? leaf : leafDark),
     );
-    almanac.capsuleSteps(
+    A.capsuleSteps(
       topX,
       topY - 1,
       size * 0.035,
       ex * 0.92 + topX * 0.08,
       ey * 0.92 + topY * 0.08,
       size * 0.018,
-      (x, y, r) => almanac.fillEllipse(B, x, y, r, r, leafLight),
+      (x, y, r) => A.fillEllipse(B, x, y, r, r, leafLight),
     );
   }
   for (let i = 0; i < 3; i++)
-    almanac.fillEllipse(
+    A.fillEllipse(
       B,
       topX - 2 + i * 2.4,
       topY + 2.4 + (i % 2) * 1.6,
@@ -825,7 +938,7 @@ function buildPalm(rng, size, pal) {
       size * 0.045,
       shadeOf(pal.bark, 0.1),
     );
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   return { w, h, px: B.px, ax: Math.round(w * 0.34), ay: h - 2 };
 }
 
@@ -843,7 +956,7 @@ function buildBoat(rng, size, pal) {
     prow = w - 2,
     stern = 3;
   // the hull: a shallow bowl with a prow that lifts
-  almanac.polygonRows(
+  A.polygonRows(
     [
       [stern, deckY],
       [w * 0.34, deckY - 2],
@@ -863,7 +976,7 @@ function buildBoat(rng, size, pal) {
   const mastX = Math.round(w * 0.52),
     mastTop = Math.round(h * 0.08);
   fillRect(B, mastX, mastTop, mastX + Math.max(1, Math.round(size * 0.04)), deckY, hullDark);
-  almanac.polygonRows(
+  A.polygonRows(
     [
       [mastX + 1, mastTop + 2],
       [w * 0.9, deckY - 4],
@@ -875,7 +988,7 @@ function buildBoat(rng, size, pal) {
     },
   );
   for (let y = mastTop + 4; y < deckY - 4; y += 3) fillRect(B, mastX + 2, y, Math.round(w * 0.9) - 2, y, sailShade);
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   return { w, h, px: B.px, ax: Math.round(w * 0.46), ay: deckY + 3 };
 }
 
@@ -890,24 +1003,24 @@ function buildTurtle(rng, size, pal, p) {
     goldL = shadeOf(tint, 0.24),
     goldD = shadeOf(tint, -0.26),
     goldRim = shadeOf(tint, -0.42),
-    skin = almanac.mixPacked(hex(pal.leaf), gold, 0.25),
+    skin = A.mixPacked(hex(pal.leaf), gold, 0.25),
     skinD = shadeOf(pal.leaf, -0.3),
     cx = w * 0.44,
     cy = h * 0.58,
     sw = w * 0.36,
     sh = h * 0.38;
   // the flippers first, so they show beyond the shell, then the tail
-  const flipper = (fx, fy, fw, fh, c) => almanac.fillEllipse(B, w * fx, h * fy, w * fw, h * fh, c);
+  const flipper = (fx, fy, fw, fh, c) => A.fillEllipse(B, w * fx, h * fy, w * fw, h * fh, c);
   flipper(0.14, 0.58, 0.11, 0.09, skinD);
   flipper(0.22, 0.8, 0.12, 0.1, skinD);
   flipper(0.52, 0.22, 0.1, 0.08, skin);
   flipper(0.66, 0.8, 0.12, 0.1, skin);
-  almanac.fillEllipse(B, w * 0.06, h * 0.56, w * 0.05, h * 0.06, skinD);
+  A.fillEllipse(B, w * 0.06, h * 0.56, w * 0.05, h * 0.06, skinD);
   // the shell: a rim, the dome, the light on it, and its plates
-  almanac.fillEllipse(B, cx, cy, sw + 1.5, sh + 1.5, goldRim);
-  almanac.fillEllipse(B, cx, cy, sw, sh, gold);
-  almanac.fillEllipse(B, cx - sw * 0.1, cy - sh * 0.28, sw * 0.62, sh * 0.5, goldL);
-  const plate = (u, v, r) => almanac.fillEllipse(B, cx + sw * u, cy + sh * v, sw * r, sh * r * 1.1, goldD);
+  A.fillEllipse(B, cx, cy, sw + 1.5, sh + 1.5, goldRim);
+  A.fillEllipse(B, cx, cy, sw, sh, gold);
+  A.fillEllipse(B, cx - sw * 0.1, cy - sh * 0.28, sw * 0.62, sh * 0.5, goldL);
+  const plate = (u, v, r) => A.fillEllipse(B, cx + sw * u, cy + sh * v, sw * r, sh * r * 1.1, goldD);
   plate(0, 0.05, 0.26);
   for (let k = 0; k < 6; k++) {
     const a = (k / 6) * TAU + 0.6;
@@ -915,11 +1028,11 @@ function buildTurtle(rng, size, pal, p) {
   }
   // the head: a neck out of the shell, a broad head, an eye and the line of its mouth
   fillRect(B, w * 0.66, h * 0.4, w * 0.84, h * 0.56, skinD);
-  almanac.fillEllipse(B, w * 0.86, h * 0.48, w * 0.15, h * 0.19, skin);
-  almanac.fillEllipse(B, w * 0.87, h * 0.56, w * 0.11, h * 0.1, skinD);
+  A.fillEllipse(B, w * 0.86, h * 0.48, w * 0.15, h * 0.19, skin);
+  A.fillEllipse(B, w * 0.87, h * 0.56, w * 0.11, h * 0.1, skinD);
   B.px[Math.round(h * 0.42) * w + Math.round(w * 0.92)] = ink;
   B.px[Math.round(h * 0.42) * w + Math.round(w * 0.9)] = shadeOf(tint, 0.55);
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   return { w, h, px: B.px, ax: Math.round(w * 0.44), ay: h - 2 };
 }
 
@@ -941,17 +1054,17 @@ function buildIslet(rng, size, pal) {
     tx = Math.round(w * 0.5 - tw / 2),
     topY = Math.round(h * 0.3);
   // the mound: sand to the water, grass over it
-  almanac.fillEllipse(B, w * 0.5, midY, w * 0.48, h * 0.2, sand);
-  almanac.fillEllipse(B, w * 0.5, midY - h * 0.02, w * 0.44, h * 0.16, sandD);
-  almanac.fillEllipse(B, w * 0.5, midY - h * 0.06, w * 0.44, h * 0.2, grass);
-  almanac.fillEllipse(B, w * 0.48, midY - h * 0.15, w * 0.3, h * 0.1, grassD);
+  A.fillEllipse(B, w * 0.5, midY, w * 0.48, h * 0.2, sand);
+  A.fillEllipse(B, w * 0.5, midY - h * 0.02, w * 0.44, h * 0.16, sandD);
+  A.fillEllipse(B, w * 0.5, midY - h * 0.06, w * 0.44, h * 0.2, grass);
+  A.fillEllipse(B, w * 0.48, midY - h * 0.15, w * 0.3, h * 0.1, grassD);
   // the tower: a tapered block, a conical roof, a window, a door
   for (let y = topY; y < midY; y++) {
     const k = (y - topY) / Math.max(1, midY - topY),
       half = Math.round(tw * (0.5 + k * 0.12));
     fillRect(B, tx + tw / 2 - half, y, tx + tw / 2 + half, y, y % 3 === 2 ? stoneD : stone);
   }
-  almanac.polygonRows(
+  A.polygonRows(
     [
       [w * 0.5, topY - Math.round(h * 0.13)],
       [w * 0.5 + tw * 0.9, topY + 1],
@@ -966,7 +1079,7 @@ function buildIslet(rng, size, pal) {
     winX = Math.round(tx + tw / 2);
   B.px[winY * w + winX] = hex(pal.window);
   B.px[(winY + 1) * w + winX] = hex(pal.window);
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   return { w, h, px: B.px, ax: Math.round(w * 0.5), ay: h - 2, window: [winX - Math.round(w * 0.5), winY - (h - 2)] };
   return s2;
 }
@@ -995,7 +1108,7 @@ function buildSword(rng, size, pal, p) {
   fillRect(B, cx - Math.round(w * 0.42), guard + 2, cx + Math.round(w * 0.42), guard + 2, goldD);
   fillRect(B, cx - 1, guard + 3, cx + 1, h - 6, grip);
   fillRect(B, cx - 2, h - 5, cx + 2, h - 3, gold);
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   return { w, h, px: B.px, ax: cx, ay: h - 2 };
 }
 
@@ -1025,20 +1138,20 @@ function buildNest(rng, size, pal, p) {
       const t = n === 1 ? 0.5 : i / (n - 1),
         x = w / 2 + (t - 0.5) * 2 * spreadX;
       // each egg its own rim, so a clutch of them reads as eggs and not as one white lump
-      almanac.fillEllipse(B, x, y, rx + 0.6, ry + 0.6, eggRim);
-      almanac.fillEllipse(B, x, y, rx, ry, eggC);
-      almanac.fillEllipse(B, x - rx * 0.25, y + ry * 0.38, rx * 0.6, ry * 0.42, eggShade);
-      almanac.fillEllipse(B, x + rx * 0.18, y - ry * 0.18, rx * 0.5, ry * 0.42, eggC);
+      A.fillEllipse(B, x, y, rx + 0.6, ry + 0.6, eggRim);
+      A.fillEllipse(B, x, y, rx, ry, eggC);
+      A.fillEllipse(B, x - rx * 0.25, y + ry * 0.38, rx * 0.6, ry * 0.42, eggShade);
+      A.fillEllipse(B, x + rx * 0.18, y - ry * 0.18, rx * 0.5, ry * 0.42, eggC);
       if (rng.next() > 0.4) B.px[Math.round(y - ry * 0.2) * w + Math.round(x + rx * 0.3)] = eggSpot;
       if (rng.next() > 0.6) B.px[Math.round(y + ry * 0.2) * w + Math.round(x - rx * 0.2)] = eggSpot;
     }
     left -= n;
   }
   // the bowl in front, so the eggs sit in it
-  almanac.fillEllipse(B, w / 2, midY + size * 0.24, size * 0.8, size * 0.3, straw);
-  almanac.fillEllipse(B, w / 2, midY + size * 0.2, size * 0.7, size * 0.18, strawDark);
+  A.fillEllipse(B, w / 2, midY + size * 0.24, size * 0.8, size * 0.3, straw);
+  A.fillEllipse(B, w / 2, midY + size * 0.2, size * 0.7, size * 0.18, strawDark);
   for (let x = Math.round(w * 0.16); x < w * 0.84; x += 3) B.px[Math.round(midY + size * 0.3) * w + x] = strawDark;
-  almanac.outlinePass(B, ink);
+  A.outlinePass(B, ink);
   return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
 }
 
@@ -1165,11 +1278,11 @@ function cameraAt(list, t) {
     const a = list[i],
       b = list[i + 1];
     if (t <= b.t) {
-      const u = almanac.smoothstep(0, 1, (t - a.t) / Math.max(1e-6, b.t - a.t));
+      const u = A.smoothstep(0, 1, (t - a.t) / Math.max(1e-6, b.t - a.t));
       return {
-        x: almanac.lerp(a.x || 0, b.x || 0, u),
-        y: almanac.lerp(a.y || 0, b.y || 0, u),
-        zoom: almanac.lerp(a.zoom || 1, b.zoom || 1, u),
+        x: A.lerp(a.x || 0, b.x || 0, u),
+        y: A.lerp(a.y || 0, b.y || 0, u),
+        zoom: A.lerp(a.zoom || 1, b.zoom || 1, u),
       };
     }
   }
@@ -1187,7 +1300,7 @@ function trackAt(at, t) {
       len = Math.abs(b.x - a.x);
     if (t <= b.t) {
       const u = (t - a.t) / Math.max(1e-6, b.t - a.t);
-      return { x: almanac.lerp(a.x, b.x, u), dist: dist + len * u, dir: Math.sign(b.x - a.x) || 1 };
+      return { x: A.lerp(a.x, b.x, u), dist: dist + len * u, dir: Math.sign(b.x - a.x) || 1 };
     }
     dist += len;
   }
@@ -1207,8 +1320,8 @@ function trackAt2(at, t) {
     if (t <= b.t) {
       const u = (t - a.t) / Math.max(1e-6, b.t - a.t);
       return {
-        x: almanac.lerp(a.x, b.x, u),
-        y: almanac.lerp(ty(a), ty(b), u),
+        x: A.lerp(a.x, b.x, u),
+        y: A.lerp(ty(a), ty(b), u),
         dist: dist + len * u,
         dir: Math.sign(b.x - a.x) || 1,
       };
@@ -1231,24 +1344,10 @@ export function storybook(script, o = {}) {
   const problems = validate(script);
   if (problems.length) throw new Error(`this story cannot be drawn as written:\n  ${problems.join('\n  ')}`);
 
-  // every technique the film calls is counted on its way through, as the island counts its own
-  const used = new Set(),
-    A = {};
-  for (const [name, f] of Object.entries(almanac))
-    A[name] =
-      typeof f !== 'function'
-        ? f
-        : /^[A-Z]/.test(name)
-          ? class extends f {
-              constructor(...a) {
-                super(...a);
-                used.add(name);
-              }
-            }
-          : (...a) => {
-              used.add(name);
-              return f(...a);
-            };
+  // every technique the film calls is counted on its way through A, as the island counts its own; from here on
+  // this book is the one being drawn, and frame() says so again each time it is called
+  const used = new Set();
+  activeUsed = used;
   const {
     clamp,
     lerp,
@@ -1301,6 +1400,10 @@ export function storybook(script, o = {}) {
     wallShade,
     mixColour,
     latticeRandom,
+    cloudShadows,
+    scatterAlong,
+    swayingChain,
+    formationSlot,
   } = A;
 
   const W = Math.round(o.size || script.size || 480),
@@ -1381,6 +1484,68 @@ export function storybook(script, o = {}) {
     return fields.get(key);
   }
 
+  // ---------------------------------------------------------------- the set-dressing
+  // A script stages only what its story needs -- a house, two trees, the cast -- and leaves the rest of the
+  // meadow bare, where the island film's world is grown whole. So the engine dresses every scene itself, from
+  // the same seed: a hazy row of trees along the horizon, bushes and rocks in the near grass, reeds at a shore,
+  // clouds where the script hung none. None of it is in the script's way: it keeps clear of the script's own
+  // props, stands behind the cast, and the same script and seed grow the same dressing at every telling.
+  const scenery = new Map();
+  function sceneScenery(scene) {
+    if (scenery.has(scene.id)) return scenery.get(scene.id);
+    let lo = -280,
+      hi = 280;
+    const see = (x) => {
+      if (typeof x === 'number') {
+        lo = Math.min(lo, x);
+        hi = Math.max(hi, x);
+      }
+    };
+    for (const k of scene.camera || []) {
+      see((k.x || 0) - 300);
+      see((k.x || 0) + 300);
+    }
+    for (const p of scene.props || []) see(p.x);
+    for (const a of scene.actors || []) for (const k of a.at || []) see(k.x);
+    const seed = seedOf(`${seedWords}|scenery|${scene.id}`),
+      clearOf = (x, gap) => !(scene.props || []).some((p) => p.kind !== 'cloud' && Math.abs((p.x || 0) - x) < gap),
+      back = [],
+      front = [];
+    for (const q of scatterAlong(lo, hi, 47, seed, { chance: 0.62, variants: 4, size: [0.75, 1.25], salt: 1 }))
+      if (clearOf(q.x, 30)) back.push({ x: q.x, v: q.variant });
+    for (const q of scatterAlong(lo, hi, 55, seed, { chance: 0.45, variants: 4, size: [0.75, 1.2], salt: 2 }))
+      if (clearOf(q.x, 24)) front.push({ x: q.x, v: q.variant, row: indexRandom(q.i, seed + 77) });
+    const out = { lo, hi, seed, back, front };
+    scenery.set(scene.id, out);
+    return out;
+  }
+
+  // one of a few grown sprites, reused along a scene the way the island reuses its trees; the far row is hazed
+  // toward the sky, as the hills are
+  function decorSprite(kind, variant, hazed) {
+    const key = `decor|${kind}|${variant}|${hazed ? 1 : 0}`;
+    if (sprites.has(key)) return sprites.get(key);
+    const rng = new SeededRandom(`${seedWords}|${key}`),
+      haze = (c) => mixColour(rgbOf(c), rgbOf('#d7e7f0'), 0.26),
+      p2 = hazed ? { ...pal, leaf: haze(pal.leaf), bark: haze(pal.bark), ink: haze(pal.ink) } : pal,
+      sizes = {
+        tree: [26, 34, 30, 38],
+        bush: [14, 19, 16, 21],
+        rock: [8, 11, 9, 13],
+        cloud: [20, 27, 23, 31],
+        palm: [28, 34, 30, 36],
+      };
+    let spr;
+    const size = sizes[kind][variant & 3] * SC;
+    if (kind === 'tree') spr = buildTree(rng, size, p2);
+    else if (kind === 'bush') spr = buildBush(rng, size, p2);
+    else if (kind === 'cloud') spr = buildCloud(rng, size, p2);
+    else if (kind === 'palm') spr = buildPalm(rng, size, p2);
+    else spr = buildRock(rng, size, p2);
+    sprites.set(key, spr);
+    return spr;
+  }
+
   // the scene a moment falls in, for captions and for the player's timeline
   function sceneAt(t) {
     let start = 0;
@@ -1394,6 +1559,8 @@ export function storybook(script, o = {}) {
   }
 
   const skyRows = new Int32Array(H); // a packed colour a row, rebuilt per frame
+  let cloudScratch = null,
+    cloudScratchI = null; // the cloud shadows' grids, kept between frames as the island keeps its own
   const FRAME = new Uint32Array(W * H);
 
   // a moment of the picture, told by whichever view its scene asks for
@@ -1535,6 +1702,7 @@ export function storybook(script, o = {}) {
       wet = weatherKind === 'rain' || weatherKind === 'storm' ? 0.7 : 0;
     const hour = hourLight(tod, 1, wet);
     const night = hour.night;
+    const scen = sceneScenery(scene);
     const { top, horiz } = paintSky(day, t, groundY);
 
     // clouds, far behind the hills
@@ -1547,6 +1715,39 @@ export function storybook(script, o = {}) {
       blitSprite({ w: W, h: H, px: frame }, s, x, y);
     }
 
+    // a sky is rarely empty: where the script hung no clouds the engine hangs a few of its own, and by day a
+    // vee of birds crosses now and then -- each a pure function of the moment, like everything else here
+    if (!(scene.props || []).some((p) => p.kind === 'cloud') && day.light > 0.45)
+      for (let i = 0; i < 3; i++) {
+        const s = decorSprite('cloud', i, false),
+          driftC = (local * (2.2 + i * 1.1) + parallax(cam.x, 0.1)) * cam.zoom,
+          x = wrap(i * W * 0.36 + indexRandom(i + 5, scen.seed) * 90 - driftC + W * 0.5, W + s.w) - s.w * 0.5,
+          y = (0.07 + i * 0.06 + indexRandom(i + 9, scen.seed) * 0.05) * H;
+        blitSprite({ w: W, h: H, px: frame }, s, x, y);
+      }
+    if (day.light > 0.35 && weatherKind !== 'storm' && weatherKind !== 'rain') {
+      const period = 27,
+        ph = (local + (scen.seed % 9)) % period;
+      if (ph < 11) {
+        const dirn = scen.seed % 2 ? 1 : -1,
+          lx = dirn > 0 ? -50 + (ph / 11) * (W + 100) : W + 50 - (ph / 11) * (W + 100),
+          ly = H * (0.13 + (scen.seed % 5) * 0.03) + Math.sin(ph * 0.9) * 4 * SC,
+          birdC = mixPacked(hex(pal.ink), horiz, 0.45),
+          wing = Math.max(2, Math.round(3 * SC)),
+          plot = (x, y) => {
+            if (x >= 0 && y >= 0 && x < W && y < H) frame[y * W + x] = birdC;
+          };
+        for (let i = 0; i < 5; i++) {
+          const slot = formationSlot('vee', lx, ly, dirn > 0 ? 0 : Math.PI, i),
+            bx = Math.round(lx + (slot.x - lx) * SC),
+            by = Math.round(ly + (slot.y - ly) * SC + Math.sin(local * 2 + i) * 1.5 * SC),
+            flap = Math.round(Math.sin(local * 9 + i * 1.7) * 1.6 * SC);
+          lineCells(bx - wing, by - flap, bx, by, plot);
+          lineCells(bx, by, bx + wing, by - flap, plot);
+        }
+      }
+    }
+
     // ---------------------------------------------------------------- the land, far to near
     const hills = scene.hills || [
       { seed: 3, depth: 0.3, amp: 0.38, freq: 1.5, sharp: 0.4 },
@@ -1554,6 +1755,7 @@ export function storybook(script, o = {}) {
       { seed: 11, depth: 0.84, amp: 0.08, freq: 4.2 },
     ];
     const ridge = new Int32Array(W);
+    let landTop = H; // the highest land in the frame, noted for the cloud shadows to come
     hills.forEach((h, li) => {
       const depth = h.depth === undefined ? 0.4 + li * 0.2 : h.depth,
         colour = hex(h.colour || pal.hill[Math.min(pal.hill.length - 1, li)] || pal.hill[pal.hill.length - 1]),
@@ -1575,12 +1777,62 @@ export function storybook(script, o = {}) {
         };
       // where the ridge is at each column, once: one hillLine a column, and the fill and the lit edge share it
       for (let sx = 0; sx < W; sx++) ridge[sx] = Math.round(hillLine((sx - W / 2) / cam.zoom + shift, hill, W, H));
+      // a slope catches the light or turns from it, and the fill darkens toward the hill's foot, so a hill is a
+      // relief and not a cut-out -- the island's terraces shaded the same way, face by face
+      const smooth = new Int32Array(W);
+      for (let sx = 0; sx < W; sx++) {
+        let sum = 0;
+        for (let d = -8; d <= 8; d++) sum += ridge[Math.min(W - 1, Math.max(0, sx + d))];
+        smooth[sx] = sum / 17;
+      }
+      const faceK = 0.35 + 0.65 * depth, // far slopes are hazier, so their faces differ less
+        lit = mixPacked(tinted, hex(pal.sun), 0.09 * faceK),
+        shaded = mixPacked(tinted, hex(pal.ink), 0.1 * faceK),
+        footC = mixPacked(tinted, hex(pal.groundDark), 0.28),
+        speck = mixPacked(tinted, hex(pal.ink), 0.22),
+        speckL = mixPacked(tinted, hex(pal.sun), 0.16),
+        litMid = mixPacked(lit, footC, 0.5),
+        shadedMid = mixPacked(shaded, footC, 0.5),
+        tintedMid = mixPacked(tinted, footC, 0.5);
       for (let sx = 0; sx < W; sx++) {
         const y = ridge[sx];
         if (y >= H) continue;
-        for (let yy = Math.max(0, y + 1); yy < H; yy++) frame[yy * W + sx] = tinted;
-        if (y >= 0) frame[y * W + sx] = rim;
+        if (li === hills.length - 1 && y < landTop) landTop = Math.max(0, y);
+        const slope = smooth[Math.min(W - 1, sx + 8)] - smooth[Math.max(0, sx - 8)],
+          face = slope < -3 ? lit : slope > 3 ? shaded : tinted,
+          soft = Math.abs(slope) > 2 && Math.abs(slope) <= 4, // at a face's edge, let the two tones dither into each other
+          mid = y + Math.round((H - y) * 0.42),
+          low = y + Math.round((H - y) * 0.72),
+          midTone = face === lit ? litMid : face === shaded ? shadedMid : tintedMid;
+        for (let yy = Math.max(0, y + 1); yy < H; yy++)
+          frame[yy * W + sx] = yy < mid ? (soft && (sx + yy) & 1 ? tinted : face) : yy < low ? midTone : footC;
+        if (y >= 0) frame[y * W + sx] = slope < 0 ? mixPacked(rim, hex(pal.sun), 0.25) : rim;
       }
+      // a speckle of far trees and scrub over the face, the nearer the hill the plainer each mark
+      const nDots = Math.round(W * (0.5 + depth));
+      for (let i = 0; i < nDots; i++) {
+        const sx = Math.floor(indexRandom(i + li * 733, SEED + seed) * W),
+          y = ridge[sx] + 2 + Math.floor(indexRandom(i + li * 389, SEED + seed) * Math.max(1, H - ridge[sx] - 3));
+        if (y < 0 || y >= H) continue;
+        frame[y * W + sx] = i % 3 ? speck : speckL;
+        if (depth > 0.55 && sx + 1 < W) frame[y * W + sx + 1] = speck;
+      }
+      // a broken treeline standing on the two nearer ridges
+      if (depth >= 0.5)
+        for (const q of scatterAlong(shift - W / (2 * cam.zoom), shift + W / (2 * cam.zoom), 13, SEED + seed, {
+          chance: 0.42,
+          salt: li + 3,
+          size: [0.8, 1.3],
+        })) {
+          const sx = Math.round((q.x - shift) * cam.zoom + W / 2);
+          if (sx < 1 || sx >= W - 1) continue;
+          const y = ridge[sx],
+            th = 2 + Math.round(q.size * 2 * SC);
+          if (y < th || y >= H) continue;
+          for (let yy = y - th; yy < y; yy++) frame[yy * W + sx] = speck;
+          frame[(y - 2) * W + sx - 1] = speck;
+          frame[(y - 2) * W + sx + 1] = speck;
+        }
     });
 
     // ---------------------------------------------------------------- the ground, or the water
@@ -1595,33 +1847,172 @@ export function storybook(script, o = {}) {
         for (let x = 0; x < W; x++)
           buf.px[y * W + x] = waterPixel(x + Math.round(cam.x), y, d, near, 0, T, wob, seaPalette);
       }
-      fillRect({ w: W, h: H, px: frame }, 0, groundY - 1, W - 1, groundY, mixPacked(hex(pal.sand), horiz, 0.2));
+      // the shore: dry sand above, a wet band at the water, and foam that comes and goes along it
+      const sandL = mixPacked(hex(pal.sand), horiz, 0.15),
+        sandW = mixPacked(hex(pal.sand), hex(pal.sea), 0.3),
+        foam = hex('#f2fbfd');
+      fillRect(buf, 0, groundY - 3, W - 1, groundY - 1, sandL);
+      fillRect(buf, 0, groundY, W - 1, Math.min(H - 1, groundY + 1), sandW);
+      if (groundY + 1 < H)
+        for (let x = 0; x < W; x++) {
+          const wx = x + Math.round(cam.x),
+            ph = Math.sin(wx * 0.07 + local * 1.9) + Math.sin(wx * 0.023 - local * 1.1);
+          if (ph > 0.9) frame[(groundY + 1) * W + x] = foam;
+          else if (ph > 0.55 && (x + groundY) & 1)
+            frame[(groundY + 1) * W + x] = mixPacked(frame[(groundY + 1) * W + x], foam, 0.6);
+          if (ph > 1.45 && groundY + 2 < H)
+            frame[(groundY + 2) * W + x] = mixPacked(frame[(groundY + 2) * W + x], foam, 0.5);
+        }
     } else {
       const grass = mixPacked(hex(pal.ground), horiz, 0.06 + day.night * 0.25),
         dark = mixPacked(hex(pal.groundDark), horiz, 0.1 + day.night * 0.25);
-      frame.fill(dark, groundY * W);
-      for (let y = groundY + 1; y < H; y++) {
-        const band = (y - groundY) / Math.max(1, H - groundY);
-        frame.fill(mixPacked(grass, dark, band * 0.55), y * W, y * W + W);
+      // the meadow in patches, read cell by cell of the world the way the island reads its land tile by tile:
+      // four tones, cooler and darker as they come toward the viewer, instead of one flat green
+      const meadow = [
+          mixPacked(grass, dark, 0.5),
+          mixPacked(grass, dark, 0.24),
+          grass,
+          mixPacked(grass, hex(pal.sun), 0.07),
+        ],
+        cellW = Math.max(3, Math.round(5 * SC)),
+        cellH = Math.max(3, Math.round(4 * SC)),
+        wFrom = cam.x - W / 2 / cam.zoom - cellW,
+        wTo = cam.x + W / 2 / cam.zoom + cellW,
+        meadowBuf = { w: W, h: H, px: frame },
+        rowsDown = Math.ceil((H - groundY) / cellH);
+      for (let r = 0; r < rowsDown; r++) {
+        const yA = groundY + r * cellH,
+          yB = Math.min(H - 1, yA + cellH - 1),
+          nearK = (r / Math.max(1, rowsDown)) * 0.34;
+        const off = (r % 2) * cellW * 0.5; // alternate rows offset half a cell, so no straight seams run down
+        for (let c = Math.floor(wFrom / cellW) - 1; c * cellW < wTo; c++) {
+          const n =
+              latticeRandom(Math.floor(c / 4), Math.floor(r / 3), scen.seed) * 0.65 +
+              latticeRandom(c, r * 3 + 11, scen.seed) * 0.35,
+            tone = meadow[n < 0.26 ? 0 : n < 0.58 ? 1 : n < 0.86 ? 2 : 3],
+            xa = Math.round((c * cellW - off - cam.x) * cam.zoom + W / 2),
+            xb = Math.round(((c + 1) * cellW - off - cam.x) * cam.zoom + W / 2);
+          fillRect(meadowBuf, xa, yA, xb, yB, nearK > 0.01 ? mixPacked(tone, dark, nearK) : tone);
+        }
       }
-      // a few tufts and stones, placed by their number so they never move
-      for (let i = 0; i < 46; i++) {
-        const x = Math.floor(indexRandom(i, SEED) * (W + 40) - 20 - cam.x * 0.9) % (W + 40);
-        const px0 = ((x + W + 40) % (W + 40)) - 20,
-          y = groundY + 3 + Math.floor(indexRandom(i + 501, SEED) * (H - groundY - 4));
-        if (y < H && px0 >= 0 && px0 < W) {
-          frame[y * W + px0] = mixPacked(frame[y * W + px0], hex(pal.groundDark), 0.5);
-          frame[y * W + px0 + 1] = mixPacked(frame[y * W + px0 + 1], hex(pal.groundDark), 0.3);
+      // a worn path along the ground line, where the feet of the story go, its edges soft in dither
+      const soil = mixPacked(hex(pal.sand), hex(pal.bark), 0.32),
+        soilD = mixPacked(soil, dark, 0.35),
+        pathH = Math.max(3, Math.round(6.5 * SC * cam.zoom)),
+        walkers = (scene.actors || []).length || (scene.props || []).some((p) => p.kind === 'house');
+      if (walkers)
+        for (let sx = 0; sx < W; sx++) {
+          const wx = (sx - W / 2) / cam.zoom + cam.x,
+            wob = Math.round((Math.sin(wx * 0.021 + 1.7) * 1.6 + Math.sin(wx * 0.11) * 0.7) * SC),
+            yA = groundY + 1 + wob,
+            yB = Math.min(H - 1, yA + pathH);
+          for (let y = yA; y <= yB; y++) {
+            const edge = y === yA || y === yB;
+            if (edge && (sx + y) & 1) continue;
+            frame[y * W + sx] = mixPacked(frame[y * W + sx], (y - yA) % 3 === 2 ? soilD : soil, edge ? 0.5 : 0.8);
+          }
+        }
+      // tufts, flowers and pebbles through the near grass, larger as they come forward
+      const tuftD = mixPacked(dark, hex(pal.ink), 0.14),
+        tuftL = mixPacked(grass, hex(pal.sun), 0.28),
+        bloomC = hex(pal.bloom || '#f6d1de'),
+        pebble = mixPacked(hex(pal.stoneRoof), dark, 0.3);
+      for (let rowI = 0; rowI < 4; rowI++) {
+        const yBase = groundY + Math.round((0.18 + rowI * 0.2) * (H - groundY));
+        for (const q of scatterAlong(wFrom, wTo, 12 - rowI, scen.seed, {
+          chance: 0.82,
+          variants: 5,
+          size: [0.8, 1.3],
+          salt: 10 + rowI,
+        })) {
+          const sx = Math.round((q.x - cam.x) * cam.zoom + W / 2),
+            sy = yBase + Math.round((indexRandom(q.i + rowI * 57, scen.seed) - 0.5) * 5 * SC);
+          if (sx < 1 || sx >= W - 1 || sy < groundY + 2 || sy >= H) continue;
+          if (q.variant === 0) {
+            frame[sy * W + sx] = bloomC;
+            frame[sy * W + sx + 1] = mixPacked(bloomC, grass, 0.4);
+            if (sy + 1 < H) frame[(sy + 1) * W + sx] = tuftD;
+          } else if (q.variant === 1) {
+            frame[sy * W + sx] = pebble;
+            frame[sy * W + sx + 1] = mixPacked(pebble, grass, 0.35);
+          } else {
+            const blades = Math.max(1, Math.round(SC * q.size * (0.9 + rowI * 0.35)));
+            for (let b = -1; b <= 1; b++)
+              for (let yy = 0; yy <= blades - Math.abs(b); yy++) {
+                const y2 = sy - yy;
+                if (y2 >= 0) frame[y2 * W + sx + b] = b === 0 ? tuftL : tuftD;
+              }
+          }
         }
       }
       const shore = mixPacked(hex(pal.ground), hex(pal.groundDark), 0.35);
       fillRect({ w: W, h: H, px: frame }, 0, groundY - 1, W - 1, groundY, shore);
     }
 
+    // ---------------------------------------------------------------- the dressing the engine grows
+    {
+      const view0 = { w: W, h: H, px: frame },
+        shiftBack = parallax(cam.x, 0.86),
+        wFrom = cam.x - W / 2 / cam.zoom - 40,
+        wTo = cam.x + W / 2 / cam.zoom + 40,
+        shadeK = lerp(0.96, 0.84, clamp(day.light, 0, 1));
+      // the horizon's own row, hazed, a little behind the story's ground line
+      for (const it of scen.back) {
+        const s = decorSprite(it.v < 2 ? 'tree' : 'bush', it.v, true),
+          x = (it.x - shiftBack) * cam.zoom + W / 2,
+          y = groundY + 2 * SC * cam.zoom;
+        if (x < -s.w || x > W + s.w) continue;
+        if (day.light > 0.1) shadeEllipse(view0, x + 2 * SC, y, Math.max(2, s.w * 0.3), Math.max(1, s.w * 0.1), shadeK);
+        blitSway(view0, s, x, y, (h) => Math.round(Math.sin(t * 1.1 + it.x * 0.13) * (h / Math.max(1, s.h)) * 1.2));
+      }
+      // bushes and rocks in the near grass -- in the shallows, rocks -- each with the ground's shade under it
+      for (const it of scen.front) {
+        const inWater = !!scene.water,
+          s = decorSprite(inWater || it.v % 2 ? 'rock' : 'bush', it.v, false),
+          x = (it.x - cam.x) * cam.zoom + W / 2,
+          y = groundY + Math.round((inWater ? 0.1 + it.row * 0.3 : 0.32 + it.row * 0.55) * (H - groundY));
+        if (x < -s.w || x > W + s.w) continue;
+        if (day.light > 0.1)
+          shadeEllipse(view0, x + 2 * SC, y, Math.max(2, s.w * 0.32), Math.max(1, s.w * 0.11), shadeK);
+        blitSprite(view0, s, x, y);
+      }
+      // reeds where the land meets the water, swaying as the island's do
+      if (scene.water) {
+        const reed = mixPacked(hex(pal.groundDark), hex(pal.ink), 0.15),
+          reedHead = hex(pal.bark),
+          plotR = (c) => (x, y) => {
+            if (x >= 0 && y >= 0 && x < W && y < H) frame[y * W + x] = c;
+          };
+        for (const q of scatterAlong(wFrom, wTo, 26, scen.seed, { chance: 0.4, salt: 21, size: [0.8, 1.25] })) {
+          const sx = Math.round((q.x - cam.x) * cam.zoom + W / 2);
+          if (sx < 0 || sx >= W) continue;
+          const pts = swayingChain(
+            sx,
+            groundY + 3,
+            { segments: 3, length: 11 * SC * q.size, sway: 0.3, speed: 2.2 },
+            1,
+            t,
+            q.i,
+          );
+          for (let i = 1; i < pts.length; i++)
+            lineCells(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], plotR(reed));
+          const topPt = pts[pts.length - 1];
+          plotR(reedHead)(Math.round(topPt[0]), Math.round(topPt[1]));
+        }
+      }
+    }
+
     // ---------------------------------------------------------------- what stands on it, far to near
     const drawn = [],
       lights = [],
       view = { w: W, h: H, px: frame };
+    // the ground's shade under a thing that stands on it: the light is from the upper left, so it falls a
+    // little to the right; it deepens with the day and is gone by night
+    const shadowFor = (wPx, x, y, k = 0.8) => {
+      if (day.light < 0.08) return;
+      const rx = Math.max(1.5, wPx * 0.34);
+      shadeEllipse(view, x + 2 * SC * cam.zoom, y, rx, Math.max(1, rx * 0.3), lerp(0.94, k, clamp(day.light, 0, 1)));
+    };
     for (const p of scene.props || []) {
       if (p.kind === 'cloud') continue;
       const s = propSprite(p.kind, p, scene.id),
@@ -1633,8 +2024,11 @@ export function storybook(script, o = {}) {
           );
       drawn.push({
         y,
-        draw: () =>
-          p.kind === 'tree' || p.kind === 'bush' ? blitSway(view, s, x, y, wind) : blitSprite(view, s, x, y, p.flip),
+        draw: () => {
+          shadowFor(s.w, x, y);
+          if (p.kind === 'tree' || p.kind === 'bush') blitSway(view, s, x, y, wind);
+          else blitSprite(view, s, x, y, p.flip);
+        },
       });
     }
     for (const a of scene.actors || []) {
@@ -1658,7 +2052,15 @@ export function storybook(script, o = {}) {
         drawn.push({
           // a thing in the air is over the land, not behind it; `layer` orders one flyer against another
           y: (air ? 1e6 : 0) + (a.layer || 0) * 1000 + y,
-          draw: () => blitSprite(view, sprite, x, y, track.dir < 0),
+          draw: () => {
+            if (air) {
+              // a flyer's shadow stays on the ground under it, the smaller and fainter the higher it flies
+              const gy = groundShare * H + (a.lane || 0) * cam.zoom,
+                high = clamp(1 - Math.max(0, gy - y) / (H * 1.1), 0.3, 1);
+              shadowFor(sprite.w * high, x, gy, lerp(0.96, 0.86, high));
+            } else shadowFor(sprite.w, x, y);
+            blitSprite(view, sprite, x, y, track.dir < 0);
+          },
         });
         if (a.glow)
           lights.push({ x, y: y - sprite.h * 0.55, r: a.glow * cam.zoom, k: 0.42 + 0.12 * Math.sin(local * 1.6 + i) });
@@ -1666,6 +2068,50 @@ export function storybook(script, o = {}) {
     }
     drawn.sort((p, q) => p.y - q.y);
     for (const d of drawn) d.draw();
+
+    // smoke from the houses' chimneys, in see-through puffs the way the island draws its own
+    for (const p of scene.props || []) {
+      if (p.kind !== 'house') continue;
+      const s = propSprite('house', p, scene.id);
+      if (!s.chimney) continue;
+      const cx0 = (p.x - cam.x) * cam.zoom + W / 2 + s.chimney[0] * cam.zoom,
+        cy0 = groundShare * H + (p.lift || 0) * cam.zoom + s.chimney[1] * cam.zoom;
+      if (cx0 < -40 || cx0 > W + 80) continue;
+      for (let i = 0; i < 6; i++) {
+        const age = (local * 0.22 + i / 6 + indexRandom(i, SEED + Math.round(p.x)) * 0.05) % 1,
+          px2 = cx0 + age * age * 22 * SC * cam.zoom + Math.sin(local * 1.3 + i * 2.1) * 1.5 * SC,
+          py2 = cy0 - 2 - age * 30 * SC * cam.zoom,
+          r = (1.2 + age * 3.6) * SC * cam.zoom;
+        ditherEllipse(
+          view,
+          px2,
+          py2,
+          r,
+          r * 0.8,
+          mixPacked(hex(pal.cloud), horiz, 0.25 + age * 0.5),
+          clamp(0.55 * (1 - age) + 0.08),
+        );
+      }
+    }
+
+    // the shadows of clouds crossing the land, as they cross the island; the sky keeps its own colour
+    if (day.light > 0.18 && landTop < H) {
+      const band = frame.slice(landTop * W);
+      cloudScratch = cloudShadows(frame.subarray(landTop * W), W, H - landTop, {
+        x: cam.x + local * 9,
+        y: local * 3,
+        seed: SEED,
+        cover: weatherKind === 'storm' || weatherKind === 'rain' ? 0.5 : 0.22,
+        strong: day.light > 0.65,
+        scratch: cloudScratch,
+      });
+      for (let y = landTop; y < groundY; y++) {
+        const sky = skyRows[y] >>> 0, // skyRows keeps the same bits signed; the frame reads them unsigned
+          row = y * W,
+          brow = (y - landTop) * W;
+        for (let x = 0; x < W; x++) if (band[brow + x] === sky) frame[row + x] = sky;
+      }
+    }
 
     // ---------------------------------------------------------------- weather and small things
     paintWeather(scene, local, t, cam.x, lights);
@@ -1780,6 +2226,40 @@ export function storybook(script, o = {}) {
     return grid;
   }
 
+  const dressed = new Map();
+  // where the engine plants, on a scene's map: shore tiles get palms, the open land its trees, and nothing
+  // stands where the script put a thing or sends its cast
+  function islandDressing(scene, g) {
+    if (dressed.has(scene.id)) return dressed.get(scene.id);
+    const { N, GH, LEV, D } = g,
+      seed = seedOf(`${seedWords}|island-dressing|${scene.id}`),
+      busy = [];
+    for (const p of scene.props || [])
+      if (p.kind !== 'cloud') busy.push([p.x || 0, p.y === undefined ? GH * 0.6 : p.y, 2.2]);
+    for (const a of scene.actors || []) for (const k of a.at || []) busy.push([k.x || 0, k.y || 0, 2]);
+    const out = [];
+    for (let ty = 1; ty < GH - 1; ty++)
+      for (let tx = 1; tx < N - 1; tx++) {
+        const i = ty * N + tx,
+          lev = LEV[i];
+        if (lev < 0) continue;
+        const n = latticeRandom(tx, ty, seed),
+          shore = D[i] / 3;
+        let kind = null;
+        if (lev === 0 && shore < 1.6 && n > 0.965) kind = 'palm';
+        else if (lev >= 1 && n > 0.975) kind = 'tree';
+        else if (lev >= 1 && n > 0.962) kind = 'bush';
+        else if (lev >= 1 && n < 0.006) kind = 'rock';
+        if (!kind) continue;
+        if (busy.some(([bx, by, r]) => Math.abs(bx - tx) <= r && Math.abs(by - ty) <= r)) continue;
+        out.push({ tx, ty, kind, v: Math.floor(latticeRandom(tx + 31, ty + 7, seed) * 4) });
+      }
+    // a cap, thinned evenly over the whole map rather than filled from its top corner
+    const thinned = out.length > 160 ? out.filter((_, i) => i % Math.ceil(out.length / 160) === 0) : out;
+    dressed.set(scene.id, thinned);
+    return thinned;
+  }
+
   const SEA = new Map();
   // the sea's colours, from the palette: seven shades of it, foam, glints, weed and the sand under the shallows
   function seaColours() {
@@ -1826,6 +2306,12 @@ export function storybook(script, o = {}) {
     const tileAt = (tx, ty) => Math.round(clamp(ty, 0, GH - 1)) * N + Math.round(clamp(tx, 0, N - 1));
     const liftAt = (tx, ty) => LIFT[tileAt(tx, ty)] * rise;
 
+    // the ground's shade under a thing, as in the side view and on the island
+    const shadowOn = (sx, sy, wPx, k = 0.8) => {
+      if (day.light < 0.08) return;
+      const rx = Math.max(1.5, wPx * 0.34);
+      shadeEllipse(view, sx + 2 * SC, sy, rx, Math.max(1, rx * 0.3), lerp(0.94, k, clamp(day.light, 0, 1)));
+    };
     const C = {
       grass: hex(pal.ground),
       grassD: hex(pal.groundDark),
@@ -1860,6 +2346,25 @@ export function storybook(script, o = {}) {
       list.push(item);
     };
 
+    // the planting the engine does itself: trees, palms by the shore, bushes and rocks over the bare land,
+    // keeping clear of what the script placed and where its cast walks
+    for (const d of islandDressing(scene, g))
+      put(d.ty, {
+        x: d.tx,
+        draw: () => {
+          const s = decorSprite(d.kind, d.v, false),
+            sx = rowX(d.ty) + d.tx * cell,
+            sy = rowY(d.ty) - liftAt(d.tx, d.ty);
+          if (sx < -s.w || sx > W + s.w || sy < -s.h || sy > H + s.h) return;
+          shadowOn(sx, sy, s.w);
+          if (d.kind === 'rock') blitSprite(view, s, sx, sy);
+          else
+            blitSway(view, s, sx, sy, (h) =>
+              Math.round(Math.sin(t * 1.1 + d.tx * 0.7 + d.ty) * (h / Math.max(1, s.h)) * 1.2),
+            );
+        },
+      });
+
     for (const p of scene.props || []) {
       if (p.kind === 'cloud') continue;
       const s = propSprite(p.kind, p, scene.id),
@@ -1871,6 +2376,7 @@ export function storybook(script, o = {}) {
         draw: () => {
           const sx = rowX(ty) + tx * cell,
             sy = rowY(ty) - liftAt(tx, ty) + (p.lift || 0) * SC + bob;
+          shadowOn(sx, sy, s.w);
           if (p.kind === 'tree' || p.kind === 'palm' || p.kind === 'bush')
             blitSway(view, s, sx, sy, (h) =>
               Math.round(
@@ -1912,6 +2418,8 @@ export function storybook(script, o = {}) {
             draw: () => {
               const sx = rowX(ty) + tx * cell,
                 sy = rowY(ty) - liftAt(tx, ty) + (a.lane || 0) * SC + bob;
+              if (air) shadowOn(sx, sy - bob, sprite.w * 0.6, 0.9);
+              else shadowOn(sx, sy, sprite.w);
               blitSprite(view, sprite, sx, sy, track.dir < 0);
               if (a.glow)
                 lights.push({
@@ -1984,7 +2492,14 @@ export function storybook(script, o = {}) {
         let surf;
         if (beach) surf = lev === 0 ? (n < 0.45 ? C.sand : C.sandD) : mixPacked(C.sand, C.grass, 0.3 + n * 0.2);
         else if (lev >= top) surf = mixPacked(C.grass, C.rock, 0.3 + n * 0.25);
-        else surf = mixPacked(C.grass, C.sand, Math.min(0.35, (lev - 1) * 0.05 + (n < 0.14 ? 0.12 : 0)));
+        else {
+          // meadow in patches, as the side view now reads its own ground: a broad tone under the tile's own
+          surf = mixPacked(C.grass, C.sand, Math.min(0.35, (lev - 1) * 0.05 + (n < 0.14 ? 0.12 : 0)));
+          const patch = latticeRandom(tx >> 2, ty >> 2, o.seed + 21);
+          if (patch < 0.32) surf = mixPacked(surf, C.grassD, 0.3);
+          else if (patch > 0.86) surf = mixPacked(surf, hex(pal.sun), 0.07);
+          if (latticeRandom(tx, ty, o.seed + 13) > 0.985) surf = mixPacked(surf, hex(pal.bloom || '#f6d1de'), 0.4);
+        }
         if (n > 0.94 && !beach) surf = C.grassD;
         const rim = mixPacked(surf, C.sun, 0.24),
           // the wall under the edge: the tile's own earth, textured by the way it is lit, in one colour a tile
@@ -2057,6 +2572,41 @@ export function storybook(script, o = {}) {
     flying.sort((p, q) => p.y - q.y);
     for (const it of flying) it.draw();
 
+    // smoke from the houses, and the shadows of clouds crossing the map, as on the island itself
+    for (const p of scene.props || []) {
+      if (p.kind !== 'house') continue;
+      const s = propSprite('house', p, scene.id);
+      if (!s.chimney) continue;
+      const ty = p.y === undefined ? GH * 0.6 : p.y,
+        cx0 = rowX(ty) + p.x * cell + s.chimney[0],
+        cy0 = rowY(ty) - liftAt(p.x, ty) + (p.lift || 0) * SC + s.chimney[1];
+      if (cx0 < -40 || cx0 > W + 80) continue;
+      for (let i = 0; i < 6; i++) {
+        const age = (local * 0.22 + i / 6 + indexRandom(i, SEED + Math.round(p.x)) * 0.05) % 1,
+          px2 = cx0 + age * age * 20 * SC + Math.sin(local * 1.3 + i * 2.1) * 1.5 * SC,
+          py2 = cy0 - 2 - age * 26 * SC,
+          r = (1.2 + age * 3.4) * SC;
+        ditherEllipse(
+          view,
+          px2,
+          py2,
+          r,
+          r * 0.8,
+          mixPacked(hex(pal.cloud), horiz, 0.25 + age * 0.5),
+          clamp(0.55 * (1 - age) + 0.08),
+        );
+      }
+    }
+    if (day.light > 0.18)
+      cloudScratchI = cloudShadows(frame, W, H, {
+        x: camX * cell + local * 9,
+        y: camY * cellY + local * 3,
+        seed: SEED,
+        cover: weatherKind === 'storm' || weatherKind === 'rain' ? 0.5 : 0.22,
+        strong: day.light > 0.65,
+        scratch: cloudScratchI,
+      });
+
     // ---------------------------------------------------------------- weather and small things
     paintWeather(scene, local, t, camX * cell, lights);
 
@@ -2068,6 +2618,7 @@ export function storybook(script, o = {}) {
   }
 
   function frame(f) {
+    activeUsed = used; // this book is the one being drawn, whichever book was drawn last
     const n = ((Math.round(f) % frames) + frames) % frames;
     return render(n / FPS);
   }

@@ -22,7 +22,9 @@ python3 -m http.server 8000          # rồi mở http://localhost:8000/examples
 Trong player:
 
 - **Space** chạy/tạm dừng, **◀ ▶** lùi/tiến một giây, **W** bật/tắt wallpaper, **Esc** thoát wallpaper.
-- **Đổi kể**: cùng kịch bản, hạt giống khác (gen khác, cây khác, mưa khác).
+- **Đổi kể**: cùng kịch bản, hạt giống khác (gen khác, cây khác, cảnh trí khác, mưa khác).
+- Dòng **Đã dùng: X trong 162 kỹ thuật** đếm trực tiếp những kỹ thuật bộ phim đã gọi — cả phần vẽ nhân vật,
+  đạo cụ và cảnh trí — như cách trang island vẫn đếm.
 - **480 / 640 / 960 px**: cùng bố cục, khung hình lớn hơn (mọi kích thước trong kịch bản tính theo bề ngang 480).
 - Ô **dán kịch bản**: dán JSON do AI viết, bấm *Vẽ truyện này*; nếu sai, danh sách lỗi hiện ngay dưới, chỉ đúng khoá.
 
@@ -39,12 +41,14 @@ node examples/storybook/film.mjs --story stories/vit-con-tim-me.json --size 960 
 
 | khung hình | truyện ba chú heo | truyện vịt con (có nước) | Hồ Gươm (góc nhìn island) |
 | ---------- | ----------------- | ------------------------ | ------------------------- |
-| 480×270    | 3.9 ms/khung      | 5.1 ms/khung             | 7.7 ms/khung              |
-| 960×540    | 5.5 ms/khung      | 10.9 ms/khung            | 22 ms/khung               |
-| 1280×720   | 11.6 ms/khung     | 19.5 ms/khung            | 34 ms/khung               |
+| 480×270    | 9.9 ms/khung      | 8.8 ms/khung             | 17.0 ms/khung             |
+| 960×540    | 14.9 ms/khung     | 22.9 ms/khung            | 37.2 ms/khung             |
+| 1280×720   | 23.9 ms/khung     | 37.0 ms/khung            | 68.6 ms/khung             |
 
-Ở 20 khung/giây, 960×540 còn thừa hơn 4× (mỗi khung chỉ cần 50 ms). Engine vẽ đúng khung được hỏi, không cần chạy
-tuần tự, nên đặt ở tab nền hay máy ngủ rồi quay lại vẫn đúng cảnh.
+Cảnh trí dày hơn trước (bóng mây, cây tự trồng, texture mặt đất) nên mỗi khung nặng hơn bản đầu: ở 20 khung/giây
+mỗi khung có 50 ms — các truyện nhìn ngang còn thừa 2–3× ở 960×540, Hồ Gươm vừa trong ngân sách ở 960 và nên
+render sẵn (bằng `film.mjs`) nếu muốn 1280×720. Engine vẽ đúng khung được hỏi, không cần chạy tuần tự, nên đặt ở
+tab nền hay máy ngủ rồi quay lại vẫn đúng cảnh.
 
 ## Đóng gói thành live wallpaper
 
@@ -92,8 +96,24 @@ Chi tiết (`island.tiles/land/levels/lift/cell/cool/invert`, toạ độ theo �
 
 ## Những gì engine vẽ
 
-Bầu trời theo giờ (`dayCycle`), đồi nhiều lớp có phối cảnh khí quyển và parallax (`hillLine`, `parallax`), cỏ, nước
-(`waterTime`, `waterPixel`), mây, mưa/tuyết/cánh hoa/đom đóm (`particleField`, `fall`, `hover`), sương (`fogBanks`),
-sét (`lightningFlash`), và một bảng màu giờ giấc phủ lên tất cả (`hourLight`, `hourTables`, `gradeFrame`) với đèn cửa
-sổ và đom đóm giữ lại vùng sáng. Nhân vật là cùng một hình tham số hoá: gen quyết định cỡ, màu lông, chân; bước chân
-theo quãng đường đã đi (`footStep`, `strideRate`, `gaitTiming`) nên không trượt.
+Bầu trời theo giờ (`dayCycle`), đồi nhiều lớp có phối cảnh khí quyển và parallax (`hillLine`, `parallax`) với sườn
+đồi bắt nắng/khuất nắng, vệt cây xa và hàng cây trên sống đồi gần, đồng cỏ vá từng ô theo thế giới như đảo đọc
+từng ô đất của nó (`latticeRandom`), một lối mòn dưới chân nhân vật, nước (`waterTime`, `waterPixel`) với bãi cát
+ướt, bọt sóng ra vào và lau sậy lay (`swayingChain`), bóng mây trôi trên đất (`cloudShadows`), bóng đổ dưới mọi
+thứ đứng trên nền — kể cả bóng của nhân vật bay (`shadeEllipse`), khói ống khói, mây, đàn chim chữ V
+(`formationSlot`), mưa/tuyết/cánh hoa/đom đóm (`particleField`, `fall`, `hover`), sương (`fogBanks`), sét
+(`lightningFlash`), và một bảng màu giờ giấc phủ lên tất cả (`hourLight`, `hourTables`, `gradeFrame`) với đèn cửa
+sổ và đom đóm giữ lại vùng sáng. Nhân vật là cùng một hình tham số hoá: gen quyết định cỡ, màu lông, đốm/vệt trên
+lưng (`bodySpots`), chân; bước chân theo quãng đường đã đi (`footStep`, `strideRate`, `gaitTiming`) nên không
+trượt. Cây có cành vươn vào tán và tán xếp ba lớp (`barkTrunk`, `leafCrown`), nhà có ống khói, khung cửa, vân rơm
+trên mái tranh.
+
+## Cảnh trí engine tự trồng
+
+Một kịch bản chỉ dựng những gì câu chuyện cần (một ngôi nhà, hai cái cây, dàn nhân vật) — phần còn lại của đồng
+cỏ trống trơn, trong khi thế giới của phim island được trồng trọn vẹn. Vì vậy engine tự bày cảnh cho mọi cảnh từ
+cùng một hạt giống (`scatterAlong`): một hàng cây ngả sương dọc chân trời, bụi và đá trong cỏ gần, lau ở bờ nước,
+mây khi kịch bản không treo mây nào; ở góc nhìn island là dừa ven bờ và cây trên đất trống của bản đồ. Cảnh trí
+tránh chỗ của đạo cụ và đường đi trong kịch bản, đứng sau nhân vật, và cùng kịch bản + cùng seed thì mọc y hệt
+— bấm **Đổi kể** là một cách trồng khác. Định dạng kịch bản không đổi: truyện cũ và kịch bản AI viết chạy nguyên
+văn, chỉ là được vẽ trong một thế giới đầy hơn.
