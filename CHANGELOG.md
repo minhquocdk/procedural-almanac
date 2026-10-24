@@ -7,6 +7,17 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `examples/live/` (also at the short address `/live/`): four finished Vietnamese live wallpapers in the island
+  film's manner, drawn by the almanac alone -- Ha Long at dawn (karsts behind a low sun, bat-wing junks, mist at the
+  waterline), flooded rice terraces (mirrored water let down fall by fall, cloud shadows, a farmer and a buffalo on
+  a bund), Hoi An at night (a street of mustard houses graded into darkness with the lanterns holding their pools
+  of light, flower lanterns on the river, the town reflected), and a bamboo forest in afternoon rain (fronts that
+  build and ease, clumped culms swaying, an egret in the shallows). Each scene is a seamless 60-second loop and a
+  pure `frame(f)` from a seed -- the same words grow a different layout in each scene -- in a player with a scene
+  picker, seed, speed, a wallpaper mode and a clock, all of it addressable by URL for wallpaper engines and kiosks.
+  No visitor input is drawn: the four scenes are the whole menu. `live.mjs --check` holds every loop to a seam of
+  0 pixels and reports 5-10 ms a frame at 480x270; a scene reports 31-36 techniques used.
+
 - `examples/storybook/`: the side view is dressed the way the island film's world is grown, and the technique
   count is kept honestly. Hills now shade by their smoothed slope with a darkening foot, a speckle of far trees
   and a broken treeline on the nearer ridges; the meadow is read in world cells of four tones with a worn path
