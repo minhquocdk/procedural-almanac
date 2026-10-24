@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Truyện tranh pixel · procedural-almanac</title>
+    <meta name="description" content="Một kịch bản JSON thành phim pixel động: ba chú heo con, vịt con tìm mẹ. Chạy như live wallpaper, hoặc dán kịch bản do AI viết." />
+    <style>
+      :root {
+        --bg: #0d1018;
+        --panel: #161c28;
+        --ink: #f2ede0;
+        --muted: #98a0ad;
+        --line: #2a3444;
+        --gold: #ffd36e;
+        --sea: #7fc8e8;
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        --body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.5 var(--body);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: 100dvh;
+      }
+      header, footer { padding: 12px max(14px, env(safe-area-inset-left)) 12px max(14px, env(safe-area-inset-right)); }
+      header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; border-bottom: 1px solid var(--line); }
+      .brand { font: 600 13px/1.2 var(--mono); color: var(--gold); letter-spacing: 0.02em; }
+      .brand a { color: inherit; }
+      h1 { margin: 0; font: 700 16px/1.2 var(--mono); flex: 1 1 auto; }
+      .stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        padding: 10px;
+        min-height: 0;
+        background: #000;
+        overflow: hidden;
+      }
+      canvas { image-rendering: pixelated; display: block; max-width: 100%; max-height: 100%; }
+      .caption {
+        position: absolute;
+        left: 50%;
+        bottom: 3%;
+        transform: translateX(-50%);
+        width: min(94%, 64ch);
+        text-align: center;
+        pointer-events: none;
+        padding: 10px 16px 12px;
+        border-radius: 10px;
+        background: radial-gradient(ellipse at center, #05070bd9 0%, #05070b8c 62%, transparent 100%);
+        text-shadow: 0 2px 0 #000c, 0 0 18px #0009;
+      }
+      .caption p {
+        margin: 0;
+        font: 600 clamp(16px, 2.4vw, 26px)/1.32 var(--body);
+        color: #fffdf6;
+      }
+      .caption p.sub { margin-top: 4px; font-size: clamp(13px, 1.5vw, 17px); font-weight: 500; color: #f4e7c4; }
+      footer { border-top: 1px solid var(--line); display: grid; gap: 8px; }
+      .bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+      .timeline { display: flex; align-items: center; gap: 10px; flex: 1 1 320px; min-width: 0; }
+      input[type='range'] { flex: 1; min-width: 0; accent-color: var(--gold); }
+      .where { font: 13px/1.2 var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+      button, select {
+        font: 600 14px/1 var(--body);
+        color: #0d1018;
+        background: var(--ink);
+        border: 2px solid var(--ink);
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 2px;
+      }
+      button.quiet, select {
+        background: transparent;
+        color: var(--ink);
+        border-color: var(--line);
+      }
+      button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+      .status { margin: 0; min-height: 1.4em; font: 13px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; }
+      .status.bad { color: #ff9b9b; }
+      details { border-top: 1px solid var(--line); padding-top: 8px; }
+      summary { cursor: pointer; font: 600 13px/1.4 var(--mono); color: var(--sea); }
+      textarea {
+        width: 100%;
+        min-height: 15em;
+        margin-top: 8px;
+        font: 12px/1.45 var(--mono);
+        color: var(--ink);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 10px;
+        tab-size: 2;
+      }
+      .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+      .hint code { font: 12px var(--mono); color: var(--sea); }
+      /* the wallpaper: nothing but the picture, and it keeps playing */
+      body.wallpaper { grid-template-rows: 1fr; background: #000; }
+      body.wallpaper header, body.wallpaper footer { display: none; }
+      body.wallpaper .stage { padding: 0; }
+      body.wallpaper canvas { max-width: 100vw; max-height: 100dvh; }
+      body.wallpaper .caption { bottom: 6%; }
+      body.wallpaper.idle .caption { opacity: 0; transition: opacity 1.2s; }
+      body.wallpaper .caption { transition: opacity 0.4s; }
+      .pill {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        font: 12px/1 var(--mono);
+        color: #0d1018;
+        background: #f2ede0cc;
+        padding: 7px 9px;
+        border-radius: 999px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+      }
+      body.wallpaper .pill { opacity: 1; }
+      body.wallpaper.idle .pill { opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand"><a href="https://github.com/BlaiseLabs/procedural-almanac">procedural-almanac</a></div>
+      <h1 id="title">Truyện tranh pixel</h1>
+      <select id="pick" aria-label="Chọn truyện">
+        <option value="stories/ba-chu-heo.json">Ba chú heo con</option>
+        <option value="stories/vit-con-tim-me.json">Vịt con tìm mẹ</option>
+      </select>
+      <button type="button" id="wall">Wallpaper</button>
+    </header>
+
+    <div class="stage" id="stage">
+      <canvas id="screen" width="480" height="270" aria-label="Phim pixel"></canvas>
+      <div class="caption" id="caption" aria-live="polite"></div>
+      <div class="pill" id="pill">wallpaper · esc để thoát</div>
+    </div>
+
+    <footer>
+      <div class="bar">
+        <button type="button" id="play">Tạm dừng</button>
+        <div class="timeline">
+          <input type="range" id="scrub" min="0" max="100" value="0" aria-label="Thời gian" />
+          <span class="where" id="where">0.0 s</span>
+        </div>
+        <button type="button" class="quiet" id="seed">Đổi kể</button>
+        <button type="button" class="quiet" id="size">480 px</button>
+      </div>
+      <p class="status" id="status" role="status"></p>
+      <details>
+        <summary>Dán kịch bản do AI viết</summary>
+        <p class="hint">
+          Một truyện là JSON: dàn nhân vật (<code>cast</code>), các cảnh (<code>scenes</code>), mỗi cảnh một
+          <code>caption</code> và những gì đứng trên nền. Định dạng đầy đủ ở
+          <code>examples/storybook/format.md</code>. Dán vào đây để xem ngay, không cần build.
+        </p>
+        <textarea id="script" spellcheck="false" placeholder='{ "title": "...", "cast": { ... }, "scenes": [ ... ] }'></textarea>
+        <div class="bar" style="margin-top: 8px">
+          <button type="button" id="draw">Vẽ truyện này</button>
+          <button type="button" class="quiet" id="mine">Lấy kịch bản đang chạy</button>
+        </div>
+      </details>
+    </footer>
+
+    <script type="module">
+      import { storybook, validate } from './story.js';
+
+      const $ = (id) => document.getElementById(id),
+        canvas = $('screen'),
+        ctx = canvas.getContext('2d'),
+        scrub = $('scrub'),
+        status = $('status');
+      const SIZES = [480, 640, 960];
+      let book = null,
+        frame = 0,
+        playing = !matchMedia('(prefers-reduced-motion: reduce)').matches,
+        clock = 0,
+        last = performance.now(),
+        size = 480,
+        seed = '',
+        script = null,
+        idleTimer = 0;
+
+      const say = (text, bad = false) => {
+        status.textContent = text;
+        status.classList.toggle('bad', bad);
+      };
+
+      // the picture is drawn at its own size and shown as large as the stage allows, in whole multiples where it can be
+      function fit() {
+        const stage = $('stage'),
+          roomW = stage.clientWidth - 20,
+          roomH = stage.clientHeight - 20,
+          k = Math.min(roomW / book.W, roomH / book.H),
+          cssW = Math.max(120, Math.floor(book.W * k));
+        canvas.style.width = cssW + 'px';
+        canvas.style.height = Math.floor(book.H * k) + 'px';
+        canvas.style.maxWidth = '100%';
+        canvas.style.maxHeight = '100%';
+      }
+      addEventListener('resize', () => book && fit());
+
+      function draw() {
+        const px = book.frame(frame);
+        ctx.putImageData(new ImageData(new Uint8ClampedArray(px.buffer, px.byteOffset, px.byteLength), book.W, book.H), 0, 0);
+        scrub.value = frame;
+        const t = frame / book.FPS,
+          at = book.sceneAt(t);
+        $('where').textContent = `${t.toFixed(1)} s · ${at.index + 1}/${book.scenes.length}`;
+        const cap = at.caption || {};
+        const want = `${cap.text || ''}|${cap.sub || ''}`;
+        if ($('caption').dataset.want !== want) {
+          $('caption').dataset.want = want;
+          $('caption').replaceChildren();
+          if (cap.text) {
+            const p = document.createElement('p');
+            p.textContent = cap.text;
+            $('caption').append(p);
+          }
+          if (cap.sub) {
+            const p = document.createElement('p');
+            p.className = 'sub';
+            p.textContent = cap.sub;
+            $('caption').append(p);
+          }
+        }
+      }
+
+      function tick(now) {
+        const dt = Math.min(0.25, (now - last) / 1000);
+        last = now;
+        if (playing && book) {
+          clock += dt;
+          const step = Math.floor(clock * book.FPS);
+          if (step > 0) {
+            clock -= step / book.FPS;
+            frame = (frame + step) % book.frames;
+            draw();
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      function setPlaying(on) {
+        playing = on;
+        $('play').textContent = on ? 'Tạm dừng' : 'Chạy';
+        clock = 0;
+      }
+
+      function grow(next, opts = {}) {
+        script = next;
+        try {
+          const t0 = performance.now();
+          book = storybook(next, { seed, size });
+          frame = Math.round((book.scenes[0].duration * 0.15 + 0) * book.FPS);
+          scrub.max = book.frames - 1;
+          canvas.width = book.W;
+          canvas.height = book.H;
+          $('title').textContent = next.title || 'Truyện tranh pixel';
+          $('seed') && ($('seed').textContent = seed ? `Seed: ${seed.slice(0, 14)}` : 'Đổi kể');
+          fit();
+          draw();
+          say(`${book.title} · ${book.scenes.length} cảnh · ${book.DUR.toFixed(0)} s · dựng trong ${Math.round(performance.now() - t0)} ms · ${book.used.size} kỹ thuật`);
+          document.title = `${book.title} · procedural-almanac`;
+          if (opts.wallpaper) setWallpaper(true);
+        } catch (e) {
+          say(String(e.message || e), true);
+        }
+      }
+
+      async function load(url) {
+        say(`Đang tải ${url}…`);
+        try {
+          const res = await fetch(url, { cache: 'no-cache' });
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          grow(await res.json());
+          const u = new URL(location.href);
+          u.searchParams.set('story', url);
+          history.replaceState(null, '', u);
+        } catch (e) {
+          say(`Không đọc được ${url} (${e.message}). Chạy bằng một static server: python3 -m http.server 8000`, true);
+        }
+      }
+
+      // ---- the wallpaper: the picture alone, looping from where a fresh load opens, controls out of the way
+      function setWallpaper(on) {
+        document.body.classList.toggle('wallpaper', on);
+        if (on) {
+          fit();
+          if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+          bump();
+        } else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      }
+      function bump() {
+        document.body.classList.remove('idle');
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => document.body.classList.add('idle'), 3200);
+      }
+      addEventListener('pointermove', bump);
+      addEventListener('focus', bump);
+
+      $('play').addEventListener('click', () => setPlaying(!playing));
+      $('wall').addEventListener('click', () => setWallpaper(!document.body.classList.contains('wallpaper')));
+      $('seed').addEventListener('click', () => {
+        // another telling of the same script: the same words, other genes, other plants, other weather
+        seed = seed ? '' : Math.random().toString(36).slice(2, 8);
+        grow(script);
+      });
+      $('size').addEventListener('click', () => {
+        size = SIZES[(SIZES.indexOf(size) + 1) % SIZES.length];
+        $('size').textContent = `${size} px`;
+        grow(script);
+      });
+      $('pick').addEventListener('change', (e) => load(e.target.value));
+      scrub.addEventListener('input', () => {
+        if (!book) return;
+        frame = +scrub.value;
+        setPlaying(false);
+        draw();
+      });
+      $('draw').addEventListener('click', () => {
+        let next;
+        try {
+          next = JSON.parse($('script').value);
+        } catch (e) {
+          say(`JSON hỏng: ${e.message}`, true);
+          return;
+        }
+        const problems = validate(next);
+        if (problems.length) {
+          say(`${problems.length} chỗ chưa vẽ được:\n  ${problems.join('\n  ')}`, true);
+          return;
+        }
+        grow(next);
+      });
+      $('mine').addEventListener('click', () => {
+        if (script) $('script').value = JSON.stringify(script, null, 2);
+      });
+      addEventListener('keydown', (e) => {
+        const typing = e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT';
+        if (e.code === 'Escape' && document.body.classList.contains('wallpaper')) setWallpaper(false);
+        if (typing) return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          setPlaying(!playing);
+        } else if (e.code === 'ArrowRight' && book) {
+          frame = Math.min(book.frames - 1, frame + book.FPS);
+          draw();
+        } else if (e.code === 'ArrowLeft' && book) {
+          frame = Math.max(0, frame - book.FPS);
+          draw();
+        } else if (e.code === 'KeyW') setWallpaper(!document.body.classList.contains('wallpaper'));
+      });
+
+      const asked = new URLSearchParams(location.search);
+      if (asked.get('story')) $('pick').value = asked.get('story');
+      if (asked.get('seed')) seed = asked.get('seed');
+      setPlaying(playing);
+      load($('pick').value);
+      requestAnimationFrame(tick);
+    </script>
+  </body>
+</html>
