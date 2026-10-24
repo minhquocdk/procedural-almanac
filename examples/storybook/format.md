@@ -94,6 +94,8 @@ thể khác, cùng `seed` là y nguyên.
 | `actors`  | không    | nhân vật đi lại (xem dưới)                                                                |
 | `effects` | không    | hạt và sương (xem dưới)                                                                   |
 | `camera`  | không    | đường đi của máy quay: `[{ "t": 0, "x": -30, "zoom": 1 }, …]`, `t` tính bằng giây trong cảnh |
+| `view`    | không    | `"side"` (mặc định: nhìn ngang) hoặc `"island"` (nhìn từ trên xuống, xem dưới)             |
+| `island`  | không    | với `view: "island"`: cách dựng bản đồ — `tiles`, `land`, `levels`, `lift`, `cell`, `cool`…  |
 
 ### `hills[]`: lớp đồi
 
@@ -126,6 +128,9 @@ Không có `hills` thì engine vẽ ba lớp mặc định.
 | `palm`  | `size`                                                        | dừa, cọ (nghiêng ra phía biển) |
 | `boat`  | `size`                                                        | thuyền buồm                    |
 | `nest`  | `size`, `eggs` (số trứng, 1–24), `egg` (`#rrggbb`)             | tổ trứng                       |
+| `turtle`| `size`, `colour` (`#rrggbb`, màu mai)                         | rùa vàng, rùa thần             |
+| `sword` | `size`, `colour` (`#rrggbb`, màu thép)                        | gươm dựng đứng (cắm xuống nước, trên đất) |
+| `islet` | `size`                                                        | cồn nhỏ có tháp canh           |
 
 Trường chung: `x` (pixel trong khung, 0 = mép trái; âm và lớn hơn `size` vẫn được), `y` (phần chiều cao, mặc định
 bằng `ground`), `lift` (nhấc lên thêm, px), `seed` (đổi dáng cây/đá), `flip` (lật ngang), `sway` (cây nghiêng theo
@@ -175,6 +180,57 @@ Nhân vật và props được vẽ xen theo `y` rồi theo `x`, nên ai ở dư
 
 `weather: { "kind": "rain" }` tự thêm mưa; `"storm"` thêm mưa to + sét + gió; `"snow"` thêm tuyết; `"fog"` thêm sương.
 
+## Góc nhìn từ trên: `view: "island"`
+
+Cùng một kịch bản có thể kể theo hai cách nhìn. `view: "side"` (mặc định) là nhìn ngang như sân khấu; `view:
+"island"` là nhìn từ trên xuống: một bản đồ ô vuông, đất chia thành nhiều bậc thang cao dần từ mặt nước, người và vật
+đặt lên từng ô và được vẽ từ xa tới gần. Trời, mây, mưa, đom đóm, giờ trong ngày và **mọi sprite** là của chung — chỉ
+có mặt đất là vẽ khác đi.
+
+```json
+{ "id": "ho-guom", "view": "island", "duration": 10, "time": 0.9,
+  "island": { "tiles": 96, "land": 0.42, "invert": true },
+  "props": [ { "kind": "islet", "x": 56, "y": 48, "size": 48 } ],
+  "actors": [ { "who": "le-loi", "at": [ { "t": 0, "x": 40, "y": 54 }, { "t": 10, "x": 46, "y": 54 } ] } ],
+  "camera": [ { "t": 0, "x": 48, "y": 46, "zoom": 1.1 } ] }
+```
+
+### `island`: tấm bản đồ
+
+| khoá     | mặc định | nghĩa                                                                      |
+| -------- | -------- | -------------------------------------------------------------------------- |
+| `tiles`  | 104      | bản đồ rộng bao nhiêu ô (24–220); bản đồ vuông nên cũng cao bằng ấy         |
+| `land`   | 0.34     | phần bản đồ là đất (0.08–0.92): nhỏ = đảo nhỏ giữa biển, lớn = bờ bao quanh |
+| `invert` | `false`  | `true` để **đất ở ngoài, nước ở giữa** — một cái hồ, không phải hòn đảo     |
+| `levels` | 5        | số bậc thang từ mặt nước lên tới đỉnh (2–9)                                 |
+| `lift`   | 4        | mỗi bậc cao hơn bậc trước bao nhiêu px (ở khung 480 rộng)                   |
+| `cell`   | 6        | một ô rộng bao nhiêu px; nhỏ = thấy nhiều bản đồ hơn, vật nhỏ hơn           |
+| `cool`   | 0.72     | chiều sâu một hàng bị ép lại bao nhiêu (nhỏ = nhìn nghiêng hơn)             |
+| `shear`  | 0.45     | hàng phía trước lệch ngang bao nhiêu — độ nghiêng của phép chiếu            |
+| `long`   | `false`  | `true`: đảo dài theo chiều ngang, như một doi đất                            |
+| `seed`   | 9        | hình dáng đảo/hồ (số nguyên)                                                |
+| `rough`  | 0.55     | độ gồ ghề của đường bờ (0–1)                                                |
+
+Bản đồ dựng một lần cho cảnh và được nhớ lại: hai cảnh cùng `island` (và cùng `seed`) là cùng một hòn đảo.
+
+### Toạ độ trong góc nhìn này
+
+Mọi thứ đổi sang **ô** (tile) chứ không còn là pixel trong khung:
+
+- `props[].x`, `props[].y`: ô của vật; `y` **bắt buộc**. `size` vẫn là pixel như cũ.
+- `actors[].at`: `{ "t": giây, "x": ô, "y": ô }` — `y` không bắt buộc, thiếu thì đi theo hàng 0. `spread` của
+  `crowd` tính bằng ô (mặc định 1.1), `lane` vẫn là px nhấc lên (đặt người ngồi trong thuyền: `lane: -4`).
+- `camera[].x`, `camera[].y`: ô máy quay nhìn vào; `zoom` phóng to/nhỏ bản đồ. Không có `camera` thì máy quay mở
+  đúng giữa vùng đất (hoặc giữa hồ, với `invert`).
+- Thứ tự vẽ: theo hàng `y` từ xa tới gần, nên vật ở hàng lớn hơn (gần hơn) che vật ở hàng nhỏ hơn.
+
+`hills`, `ground`, `water`, `beach` không dùng trong góc nhìn này (đã có bản đồ), và prop `cloud` không được vẽ.
+`weather` và `effects` thì dùng như thường.
+
+Bản đồ là phần **duy nhất** của truyện không đổi theo `seed` của phim: cùng một kịch bản, `seed` khác thì cỏ cây, con
+vật và từng ô đất vẫn vậy, vì các ô trong kịch bản phải giữ đúng mặt đất của chúng. Muốn một hòn đảo khác thì đổi
+`island.seed`.
+
 ## Bảng màu: `palette`
 
 Mọi khoá đều không bắt buộc; thiếu thì lấy mặc định của engine.
@@ -194,11 +250,13 @@ Mọi khoá đều không bắt buộc; thiếu thì lấy mặc định của e
 
 `validate()` từ chối, kèm câu chỉ chỗ:
 
-- `cast.<tên>.kind` không nằm trong sáu loài trên;
+- `cast.<tên>.kind` không nằm trong tám loài trên;
 - `actors[].who` không có trong `cast`;
 - `at` rỗng, thiếu `x`, hoặc `t` không tăng dần;
 - `duration` ≤ 0; `time` ngoài 0..1; `ground` ngoài 0.15..0.98;
 - `props[].kind` lạ, `house.style` lạ, prop thiếu `x`;
+- `view` không phải `side`/`island`; prop trong góc nhìn island thiếu `y`; `island` có khoá lạ về kiểu hay ngoài
+  khoảng (ví dụ `tiles: 4`); `camera` thiếu `t`;
 - `effects[].kind`, `weather.kind` lạ;
 - `palette` không phải màu `#rrggbb` (trừ `sky` và `hill`).
 
@@ -211,6 +269,9 @@ Mọi khoá đều không bắt buộc; thiếu thì lấy mặc định của e
 - **Xếp lớp bằng `lane`:** người đi trước (`lane: 6`) che người đi sau (`lane: 0`).
 - **Đừng kể bằng lời những gì đã thấy:** "trời mưa" thì cho `weather`, đừng chỉ viết.
 - **Kết bằng một cảnh lặng:** máy quay đứng yên, đom đóm, câu kết ngắn.
+- **Góc nhìn island để kể chuyện "cả một vùng":** một hồ, một đảo, một làng. Máy quay `zoom` 1.2–1.6 cho cảnh gần
+  (một bờ hồ, một đám đông), `zoom` 1 cho toàn cảnh. Vật đứng trên nước thì đặt đúng ô nước (thuyền, rùa, gươm cắm
+  xuống hồ); người ngồi trong thuyền thì cùng ô với thuyền và `lane: -4`.
 
 ## Chạy thử
 
@@ -225,10 +286,11 @@ node examples/storybook/film.mjs --story stories/vit-con-tim-me.json --still 12 
 node examples/storybook/film.mjs --story stories/lac-long-quan-au-co.json --still 24 rong.png
 ```
 
-## Ba truyện mẫu
+## Bốn truyện mẫu
 
 | file | truyện | có gì |
 | ---- | ------ | ----- |
 | `stories/ba-chu-heo.json` | Ba chú heo con | nhà rơm/gỗ/đá, sói, bão, sét, mưa |
 | `stories/vit-con-tim-me.json` | Vịt con tìm mẹ | mặt hồ, sương, đêm, đom đóm, mưa |
 | `stories/lac-long-quan-au-co.json` | Lạc Long Quân · Âu Cơ | rồng bay, tiên có cánh và quầng sáng, tổ trăm trứng, thuyền, dừa, đám đông trẻ, bong bóng, đốm sáng |
+| `stories/su-tich-ho-guom.json` | Sự tích Hồ Gươm | **góc nhìn island**: hồ giữa kinh thành, cồn nhỏ có tháp, rùa vàng, gươm thần, thuyền, đám đông, đêm có đom đóm |

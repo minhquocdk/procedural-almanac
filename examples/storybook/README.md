@@ -9,8 +9,9 @@ sprite, không ảnh, không build step**, chỉ có almanac. Cùng một file c
   để xem ngay.
 - `format.md` — **định dạng kịch bản**: đưa file này cho mô hình ngôn ngữ khi muốn nó viết truyện mới.
 - `film.mjs` — chụp ảnh/kiểm tra trong Node: `--check`, `--still`, `--sheet`.
-- `stories/` — ba truyện mẫu tiếng Việt: `ba-chu-heo.json`, `vit-con-tim-me.json`, `lac-long-quan-au-co.json` (rồng
-  bay, tiên có cánh, tổ trăm trứng, thuyền ra khơi).
+- `stories/` — bốn truyện mẫu tiếng Việt: `ba-chu-heo.json`, `vit-con-tim-me.json`, `lac-long-quan-au-co.json` (rồng
+  bay, tiên có cánh, tổ trăm trứng, thuyền ra khơi) và `su-tich-ho-guom.json` (kể bằng **góc nhìn island**: hồ giữa
+  kinh thành, cồn nhỏ có tháp, rùa vàng, gươm thần).
 
 ## Chạy
 
@@ -36,11 +37,11 @@ node examples/storybook/film.mjs --story stories/vit-con-tim-me.json --size 960 
 
 ## Đo trên máy này
 
-| khung hình | truyện ba chú heo | truyện vịt con (có nước) |
-| ---------- | ----------------- | ------------------------ |
-| 480×270    | 3.9 ms/khung      | 5.1 ms/khung             |
-| 960×540    | 5.5 ms/khung      | 10.9 ms/khung            |
-| 1280×720   | 11.6 ms/khung     | 19.5 ms/khung            |
+| khung hình | truyện ba chú heo | truyện vịt con (có nước) | Hồ Gươm (góc nhìn island) |
+| ---------- | ----------------- | ------------------------ | ------------------------- |
+| 480×270    | 3.9 ms/khung      | 5.1 ms/khung             | 7.7 ms/khung              |
+| 960×540    | 5.5 ms/khung      | 10.9 ms/khung            | 22 ms/khung               |
+| 1280×720   | 11.6 ms/khung     | 19.5 ms/khung            | 34 ms/khung               |
 
 Ở 20 khung/giây, 960×540 còn thừa hơn 4× (mỗi khung chỉ cần 50 ms). Engine vẽ đúng khung được hỏi, không cần chạy
 tuần tự, nên đặt ở tab nền hay máy ngủ rồi quay lại vẫn đúng cảnh.
@@ -77,6 +78,17 @@ Ba điều cần giữ khi đóng gói:
 Muốn thêm loài mới (gấu, cá, hươu) thì thêm một mục vào `KINDS` trong `story.js`: một bảng số đo (thân, chân, đầu,
 mõm, tai, đuôi, dáng đi) và khoảng gen; phần vẽ dùng chung, không phải viết lại. Loài **bay** (như `dragon`, `fairy`)
 cần hình riêng: chúng không bước chân mà đập cánh theo đồng hồ.
+
+## Hai góc nhìn
+
+Mỗi cảnh tự chọn cách nhìn (`view`):
+
+- **`side`** (mặc định) — nhìn ngang, như sân khấu: trời, đồi, mặt đất, nhân vật đi qua khung.
+- **`island`** — nhìn từ trên xuống như tấm bản đồ: một lưới ô, đất chia bậc thang cao dần từ mặt nước, mọi vật đặt
+  theo ô và vẽ từ xa tới gần. `invert: true` để thành một cái **hồ** giữa đồng bằng thay vì hòn đảo giữa biển. Trời,
+  mưa, đom đóm, giờ trong ngày và mọi sprite dùng chung với góc nhìn ngang — chỉ mặt đất là vẽ khác.
+
+Chi tiết (`island.tiles/land/levels/lift/cell/cool/invert`, toạ độ theo ô, `turtle`/`sword`/`islet`) ở `format.md`.
 
 ## Những gì engine vẽ
 
