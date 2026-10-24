@@ -7,6 +7,22 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `examples/storybook/`: the side view is dressed the way the island film's world is grown, and the technique
+  count is kept honestly. Hills now shade by their smoothed slope with a darkening foot, a speckle of far trees
+  and a broken treeline on the nearer ridges; the meadow is read in world cells of four tones with a worn path
+  under the cast's feet and tufts, flowers and pebbles in the near grass; shores have wet sand, coming-and-going
+  foam and reeds. Everything that stands casts the ground's shade (a flyer's stays under it), houses have
+  chimneys and smoke, cloud shadows cross the land (the sky keeps its colour), birds cross by day in a vee, and
+  where a script hung no clouds the engine hangs its own. A script stages only what its story needs, so the
+  engine now plants the rest from the same seed -- a hazed tree line on the horizon, bushes and rocks in the
+  foreground, palms and trees on an island view's bare land -- keeping clear of the script's props and paths;
+  the same script and seed grow the same dressing. Trees branch into three-billowed crowns, coats carry spots, a
+  saddle or a pale belly. Every call into the almanac now goes through one counting wrapper, so `used`/`report()`
+  include the figure and prop builders (a story now reports 41-46 techniques, not 21-26). The player page is
+  restyled to match the island page -- paper, ink borders, the called-so-far technique chips -- keeping the
+  timeline, story picker, seed and size controls, the paste-a-script box and the wallpaper mode. The script
+  format is unchanged: existing stories and AI-written scripts run as written, drawn in a fuller world.
+
 - `examples/storybook/`: a second way to see a story, `view: "island"` -- the same scene looked down on as a map of
   tiles, its land terraced up out of the water, `invert` for a lake ringed by its shore, people and things placed by
   tile and drawn far to near, the camera panning and zooming over the map. Three more props, `turtle`, `sword` and
