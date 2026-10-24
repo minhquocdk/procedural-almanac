@@ -19,7 +19,8 @@
   "scripts": {
     "test": "node tests/run.mjs",
     "docs": "node tools/gallery.mjs && node tools/catalog.mjs",
-    "format": "prettier --write src tests tools almanac.json references.json package.json"
+    "format": "prettier --write src tests tools almanac.json references.json package.json",
+    "storybook": "node examples/storybook/film.mjs --check"
   },
   "keywords": [
     "procedural",

@@ -1,0 +1,343 @@
+{
+  "title": "Ba chú heo con",
+  "lang": "vi",
+  "seed": "ba-chu-heo-2024",
+  "size": 480,
+  "fps": 20,
+  "palette": {
+    "sky": {
+      "night": ["#101a3a", "#2b3766"],
+      "dawn": ["#4a4f8c", "#f0a884"],
+      "day": ["#63a9dd", "#d3eaf6"],
+      "dusk": ["#4b3f7a", "#f2a26c"]
+    },
+    "hill": ["#a9cbb0", "#8cb896", "#6fa27c"],
+    "ground": "#93c176",
+    "groundDark": "#7aa862"
+  },
+  "cast": {
+    "heo-cam": { "kind": "pig", "genes": { "size": 32, "coat": "#eda6a6" } },
+    "heo-hong": { "kind": "pig", "genes": { "size": 28, "coat": "#f2b8b2" } },
+    "heo-nau": { "kind": "pig", "genes": { "size": 30, "coat": "#e29494" } },
+    "soi": { "kind": "wolf", "genes": { "size": 46, "coat": "#7a8090" } }
+  },
+  "scenes": [
+    {
+      "id": "roi-nha",
+      "duration": 9,
+      "time": 0.42,
+      "caption": {
+        "text": "Ba chú heo con rời nhà, mỗi chú đi tìm một mảnh đất của riêng mình.",
+        "sub": "Mẹ dặn: con nào chăm chỉ, con ấy có nhà vững."
+      },
+      "camera": [
+        { "t": 0, "x": -30, "zoom": 1 },
+        { "t": 9, "x": 90, "zoom": 1.05 }
+      ],
+      "hills": [
+        { "seed": 31, "depth": 0.25, "amp": 0.2, "freq": 1.6, "sharp": 0.5 },
+        { "seed": 32, "depth": 0.55, "amp": 0.12, "freq": 2.6 },
+        { "seed": 33, "depth": 0.8, "amp": 0.06, "freq": 4.2 }
+      ],
+      "props": [
+        { "kind": "cloud", "x": 90, "y": 0.14, "size": 26 },
+        { "kind": "cloud", "x": 300, "y": 0.2, "size": 20 },
+        { "kind": "tree", "x": 20, "size": 44, "seed": 5 },
+        { "kind": "tree", "x": 150, "size": 38, "seed": 6 },
+        { "kind": "tree", "x": 470, "size": 46, "seed": 7 },
+        { "kind": "bush", "x": 90, "size": 22, "seed": 8 },
+        { "kind": "flower", "x": 60, "size": 14, "seed": 9 },
+        { "kind": "flower", "x": 250, "size": 14, "seed": 10 },
+        { "kind": "flower", "x": 400, "size": 14, "seed": 11 }
+      ],
+      "actors": [
+        {
+          "who": "heo-cam",
+          "size": 32,
+          "at": [
+            { "t": 0, "x": -20 },
+            { "t": 9, "x": 170 }
+          ]
+        },
+        {
+          "who": "heo-hong",
+          "size": 28,
+          "at": [
+            { "t": 0, "x": -70 },
+            { "t": 9, "x": 140 }
+          ]
+        },
+        {
+          "who": "heo-nau",
+          "size": 30,
+          "at": [
+            { "t": 0, "x": -120 },
+            { "t": 9, "x": 110 }
+          ]
+        }
+      ],
+      "effects": [{ "kind": "petals", "count": 26 }]
+    },
+    {
+      "id": "nha-rom",
+      "duration": 8,
+      "time": 0.5,
+      "caption": {
+        "text": "Heo cả cất nhà bằng rơm. Xong trong một buổi sáng, rồi nằm ngủ.",
+        "sub": "Nhanh thì sướng, nhưng rơm thì nhẹ."
+      },
+      "camera": [
+        { "t": 0, "x": 60, "zoom": 1 },
+        { "t": 8, "x": 80, "zoom": 1.12 }
+      ],
+      "hills": [
+        { "seed": 41, "depth": 0.3, "amp": 0.18, "freq": 1.8 },
+        { "seed": 42, "depth": 0.7, "amp": 0.08, "freq": 3.4 }
+      ],
+      "props": [
+        { "kind": "cloud", "x": 150, "y": 0.16, "size": 24 },
+        { "kind": "tree", "x": 380, "size": 42, "seed": 12 },
+        { "kind": "bush", "x": 60, "size": 24, "seed": 13 },
+        { "kind": "house", "style": "straw", "x": 250, "size": 62 },
+        { "kind": "flower", "x": 150, "size": 14, "seed": 14 },
+        { "kind": "flower", "x": 330, "size": 14, "seed": 15 }
+      ],
+      "actors": [
+        {
+          "who": "heo-cam",
+          "size": 32,
+          "at": [
+            { "t": 0, "x": 150 },
+            { "t": 3, "x": 205 },
+            { "t": 8, "x": 210 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nha-go",
+      "duration": 8,
+      "time": 0.55,
+      "caption": {
+        "text": "Heo nhì cất nhà bằng gỗ. Chắc hơn một chút, và cũng lâu hơn một chút.",
+        "sub": "Gỗ thì nặng hơn rơm, nhưng vẫn chưa đủ."
+      },
+      "camera": [
+        { "t": 0, "x": 40, "zoom": 1 },
+        { "t": 8, "x": 70, "zoom": 1.1 }
+      ],
+      "hills": [
+        { "seed": 51, "depth": 0.25, "amp": 0.2, "freq": 2.1 },
+        { "seed": 52, "depth": 0.65, "amp": 0.09, "freq": 3.1 }
+      ],
+      "props": [
+        { "kind": "tree", "x": 30, "size": 40, "seed": 16 },
+        { "kind": "tree", "x": 420, "size": 44, "seed": 17 },
+        { "kind": "house", "style": "wood", "x": 265, "size": 66 },
+        { "kind": "rock", "x": 130, "size": 18, "seed": 18 }
+      ],
+      "actors": [
+        {
+          "who": "heo-hong",
+          "size": 28,
+          "at": [
+            { "t": 0, "x": 140 },
+            { "t": 4, "x": 205 },
+            { "t": 8, "x": 200 }
+          ]
+        }
+      ],
+      "effects": [{ "kind": "dust", "count": 22 }]
+    },
+    {
+      "id": "nha-da",
+      "duration": 9,
+      "time": 0.6,
+      "caption": {
+        "text": "Heo út cất nhà bằng đá. Mất ba ngày, nhưng đá thì đá.",
+        "sub": "Chậm mà chắc: viên đá nào cũng do chính nó khiêng."
+      },
+      "camera": [
+        { "t": 0, "x": 80, "zoom": 1 },
+        { "t": 9, "x": 110, "zoom": 1.14 }
+      ],
+      "hills": [
+        { "seed": 61, "depth": 0.3, "amp": 0.19, "freq": 1.7 },
+        { "seed": 62, "depth": 0.75, "amp": 0.07, "freq": 3.8 }
+      ],
+      "props": [
+        { "kind": "cloud", "x": 360, "y": 0.18, "size": 22 },
+        { "kind": "rock", "x": 90, "size": 22, "seed": 19 },
+        { "kind": "rock", "x": 400, "size": 16, "seed": 20 },
+        { "kind": "house", "style": "stone", "x": 280, "size": 72 },
+        { "kind": "tree", "x": 440, "size": 38, "seed": 21 }
+      ],
+      "actors": [
+        {
+          "who": "heo-nau",
+          "size": 30,
+          "at": [
+            { "t": 0, "x": 120 },
+            { "t": 3, "x": 215 },
+            { "t": 6.5, "x": 210 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "soi-den",
+      "duration": 10,
+      "time": 0.62,
+      "weather": { "kind": "storm", "strength": 0.9 },
+      "caption": {
+        "text": "Sói đến. Trời nổi gió, và cả khu rừng im đi.",
+        "sub": "Sói gõ cửa: — Heo ơi, mở cửa cho ta vào!"
+      },
+      "camera": [
+        { "t": 0, "x": 120, "zoom": 1.02 },
+        { "t": 10, "x": 210, "zoom": 1.08 }
+      ],
+      "hills": [
+        { "seed": 71, "depth": 0.28, "amp": 0.21, "freq": 1.5, "sharp": 0.6 },
+        { "seed": 72, "depth": 0.7, "amp": 0.08, "freq": 3.2 }
+      ],
+      "props": [
+        { "kind": "house", "style": "straw", "x": 110, "size": 54 },
+        { "kind": "house", "style": "wood", "x": 235, "size": 58 },
+        { "kind": "house", "style": "stone", "x": 380, "size": 64 },
+        { "kind": "tree", "x": 20, "size": 42, "seed": 22 },
+        { "kind": "tree", "x": 460, "size": 40, "seed": 23 }
+      ],
+      "actors": [
+        {
+          "who": "soi",
+          "size": 46,
+          "at": [
+            { "t": 0, "x": 520 },
+            { "t": 8, "x": 280 }
+          ]
+        },
+        { "who": "heo-cam", "size": 30, "at": [{ "t": 0, "x": 105 }] },
+        { "who": "heo-hong", "size": 28, "at": [{ "t": 0, "x": 230 }] },
+        { "who": "heo-nau", "size": 30, "at": [{ "t": 0, "x": 375 }] }
+      ],
+      "effects": [{ "kind": "leaves", "count": 40 }]
+    },
+    {
+      "id": "thoi-nha-rom",
+      "duration": 9,
+      "time": 0.66,
+      "weather": { "kind": "storm", "strength": 1 },
+      "caption": {
+        "text": "Sói hít một hơi thật sâu… và thổi. Nhà rơm bay mất.",
+        "sub": "Heo cả chạy sang nhà gỗ, vừa kịp đóng cửa."
+      },
+      "camera": [
+        { "t": 0, "x": 120, "zoom": 1.05 },
+        { "t": 4.5, "x": 150, "zoom": 1.14 },
+        { "t": 9, "x": 180, "zoom": 1.06 }
+      ],
+      "hills": [
+        { "seed": 81, "depth": 0.3, "amp": 0.2, "freq": 1.8, "sharp": 0.55 },
+        { "seed": 82, "depth": 0.72, "amp": 0.08, "freq": 3.0 }
+      ],
+      "props": [
+        { "kind": "house", "style": "wood", "x": 300, "size": 60 },
+        { "kind": "bush", "x": 60, "size": 22, "seed": 24 },
+        { "kind": "tree", "x": 440, "size": 44, "seed": 25 }
+      ],
+      "actors": [
+        {
+          "who": "soi",
+          "size": 46,
+          "at": [
+            { "t": 0, "x": 150 },
+            { "t": 3, "x": 175 },
+            { "t": 9, "x": 200 }
+          ]
+        },
+        {
+          "who": "heo-cam",
+          "size": 30,
+          "at": [
+            { "t": 0, "x": 130 },
+            { "t": 4, "x": 250 },
+            { "t": 9, "x": 285 }
+          ]
+        },
+        { "who": "heo-hong", "size": 28, "at": [{ "t": 0, "x": 290 }] }
+      ],
+      "effects": [{ "kind": "leaves", "count": 70 }]
+    },
+    {
+      "id": "nha-da-vung",
+      "duration": 10,
+      "time": 0.7,
+      "weather": { "kind": "storm", "strength": 1 },
+      "caption": {
+        "text": "Sói thổi nhà gỗ. Rồi thổi nhà đá — thổi đến rách cả mồm, nhà vẫn đứng.",
+        "sub": "Ba chú heo ngồi trong, run nhưng cười."
+      },
+      "camera": [
+        { "t": 0, "x": 240, "zoom": 1.02 },
+        { "t": 5, "x": 260, "zoom": 1.16 },
+        { "t": 10, "x": 250, "zoom": 1.04 }
+      ],
+      "hills": [
+        { "seed": 91, "depth": 0.28, "amp": 0.22, "freq": 1.6, "sharp": 0.6 },
+        { "seed": 92, "depth": 0.7, "amp": 0.09, "freq": 3.4 }
+      ],
+      "props": [
+        { "kind": "house", "style": "stone", "x": 280, "size": 76 },
+        { "kind": "rock", "x": 120, "size": 20, "seed": 26 },
+        { "kind": "tree", "x": 440, "size": 42, "seed": 27 }
+      ],
+      "actors": [
+        {
+          "who": "soi",
+          "size": 46,
+          "at": [
+            { "t": 0, "x": 130 },
+            { "t": 5, "x": 175 },
+            { "t": 10, "x": 165 }
+          ]
+        },
+        { "who": "heo-cam", "size": 30, "at": [{ "t": 0, "x": 268 }] },
+        { "who": "heo-hong", "size": 28, "at": [{ "t": 0, "x": 292 }] },
+        { "who": "heo-nau", "size": 30, "at": [{ "t": 0, "x": 316 }] }
+      ],
+      "effects": [{ "kind": "rain", "count": 170 }]
+    },
+    {
+      "id": "binh-minh",
+      "duration": 11,
+      "time": 0.78,
+      "caption": {
+        "text": "Sói bỏ đi. Sáng hôm sau, ba chú heo ngồi trước hiên đá, kể lại chuyện hôm qua.",
+        "sub": "Chậm một chút, chắc một đời."
+      },
+      "camera": [
+        { "t": 0, "x": 260, "zoom": 1.1 },
+        { "t": 11, "x": 200, "zoom": 1 }
+      ],
+      "hills": [
+        { "seed": 101, "depth": 0.25, "amp": 0.24, "freq": 1.4, "sharp": 0.5 },
+        { "seed": 102, "depth": 0.6, "amp": 0.12, "freq": 2.4 },
+        { "seed": 103, "depth": 0.85, "amp": 0.05, "freq": 4 }
+      ],
+      "props": [
+        { "kind": "cloud", "x": 80, "y": 0.16, "size": 28 },
+        { "kind": "house", "style": "stone", "x": 280, "size": 76 },
+        { "kind": "flower", "x": 150, "size": 14, "seed": 28 },
+        { "kind": "flower", "x": 200, "size": 14, "seed": 29 },
+        { "kind": "tree", "x": 450, "size": 46, "seed": 30 }
+      ],
+      "actors": [
+        { "who": "heo-cam", "size": 32, "at": [{ "t": 0, "x": 250 }] },
+        { "who": "heo-hong", "size": 28, "at": [{ "t": 0, "x": 305 }] },
+        { "who": "heo-nau", "size": 30, "at": [{ "t": 0, "x": 345 }] }
+      ],
+      "effects": [{ "kind": "fireflies", "count": 26 }]
+    }
+  ]
+}

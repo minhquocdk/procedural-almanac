@@ -128,6 +128,19 @@ goes. The same scene runs in two places:
   node examples/island/island.mjs --seed amber-vale-7     # another island
   ```
 
+- **A storybook**, [`examples/storybook/`](examples/storybook/): a story is one JSON file -- a cast of animals with
+  their genes, a list of scenes, a line of narration and a time of day for each -- and the engine draws it as a pixel
+  film, with a seekable `frame(f)`, a player that runs it as a live wallpaper, and a format short enough to hand to a
+  language model. Two stories in Vietnamese, *Ba chu heo con* and *Vit con tim me*, and a validator that answers a bad
+  script with the line and the key that is wrong. [Run the player](https://blaiselabs.github.io/procedural-almanac/examples/storybook/)
+  (or `python3 -m http.server 8000` and open `http://localhost:8000/examples/storybook/`).
+
+  ```sh
+  node examples/storybook/film.mjs --check                            # can this script be drawn, and what will it use
+  node examples/storybook/film.mjs --sheet sheet.png --at 3,12,30,55  # a few moments on one sheet
+  node examples/storybook/film.mjs --story stories/vit-con-tim-me.json --still 12 vit.png
+  ```
+
 ## How it is organised
 
 | file                     | what it holds                                                                                                                                                        |

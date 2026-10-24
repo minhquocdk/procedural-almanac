@@ -7,6 +7,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `examples/storybook/`: a story written as one JSON file -- a cast of animals with their genes, a list of scenes, a
+  line of narration and a time of day for each -- drawn as a pixel film by the almanac alone. `storybook(script, o)`
+  gives a seekable `frame(f)` (the same picture whether played, scrubbed or filmed), `validate(script)` answers a bad
+  script with the line and the key that is wrong, and the player (`index.html`) runs a story as a live wallpaper, with a
+  box to paste one written by a model. Two stories in Vietnamese (`ba-chu-heo`, `vit-con-tim-me`), the format
+  (`format.md`) and a Node photographer (`film.mjs --check --still --sheet`). 3.9-11.6 ms a frame at 480-1280 wide.
+
 - `projection`: `obliqueShear`, `obliqueToScreen`, `obliqueToGround`; `relief` (new): `terraceLevel`, `wallShade`,
   `leafShade`, `crownRows`, `silhouetteNormals`, `crownClumps`, the depth view of OpenWorldBuilder's top worlds (the
   same pixels in Chromium: 0 different).

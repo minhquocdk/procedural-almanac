@@ -1,0 +1,279 @@
+{
+  "title": "Vịt con tìm mẹ",
+  "lang": "vi",
+  "seed": "vit-con-2024",
+  "size": 480,
+  "fps": 20,
+  "palette": {
+    "sky": {
+      "night": ["#0b1330", "#233257"],
+      "dawn": ["#5a5f9c", "#f6bfa0"],
+      "day": ["#6fb2e2", "#d9eefa"],
+      "dusk": ["#53457f", "#f4a878"]
+    },
+    "hill": ["#a3c4bd", "#86b0a6", "#6a9a8e"],
+    "ground": "#95c98a",
+    "groundDark": "#7aae74",
+    "sea": "#3a94b8",
+    "sand": "#ecdcab"
+  },
+  "cast": {
+    "me": { "kind": "bird", "genes": { "size": 40, "coat": "#f2e7c8" } },
+    "vit": { "kind": "bird", "genes": { "size": 20, "coat": "#ffe27a" } },
+    "ban": { "kind": "bird", "genes": { "size": 19, "coat": "#f7d06d" } }
+  },
+  "scenes": [
+    {
+      "id": "buoi-sang",
+      "duration": 9,
+      "time": 0.3,
+      "ground": 0.8,
+      "water": true,
+      "caption": {
+        "text": "Mẹ dẫn vịt con ra hồ. Nước buổi sáng trong như gương.",
+        "sub": "— Con theo mẹ nhé, đừng đi xa."
+      },
+      "camera": [
+        { "t": 0, "x": -20, "zoom": 1 },
+        { "t": 9, "x": 60, "zoom": 1.06 }
+      ],
+      "hills": [
+        { "seed": 211, "depth": 0.22, "amp": 0.42, "freq": 1.3, "sharp": 0.3 },
+        { "seed": 212, "depth": 0.55, "amp": 0.24, "freq": 2.2 }
+      ],
+      "props": [
+        { "kind": "cloud", "x": 120, "y": 0.14, "size": 26 },
+        { "kind": "cloud", "x": 330, "y": 0.2, "size": 20 },
+        { "kind": "bush", "x": 30, "size": 26, "seed": 3 },
+        { "kind": "flower", "x": 400, "size": 14, "seed": 4 },
+        { "kind": "flower", "x": 440, "size": 14, "seed": 5 }
+      ],
+      "actors": [
+        {
+          "who": "me",
+          "size": 40,
+          "lane": 2,
+          "at": [
+            { "t": 0, "x": 120 },
+            { "t": 9, "x": 235 }
+          ]
+        },
+        {
+          "who": "vit",
+          "size": 20,
+          "lane": 0,
+          "at": [
+            { "t": 0, "x": 165 },
+            { "t": 9, "x": 285 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "duoi-buom",
+      "duration": 9,
+      "time": 0.42,
+      "caption": {
+        "text": "Một chú bướm vàng bay ngang. Vịt con quên cả lời mẹ dặn.",
+        "sub": "Nó đi theo cánh bướm, càng lúc càng xa."
+      },
+      "camera": [
+        { "t": 0, "x": 120, "zoom": 1.04 },
+        { "t": 9, "x": 190, "zoom": 1 }
+      ],
+      "hills": [
+        { "seed": 221, "depth": 0.25, "amp": 0.4, "freq": 1.5 },
+        { "seed": 222, "depth": 0.6, "amp": 0.2, "freq": 2.6 }
+      ],
+      "props": [
+        { "kind": "cloud", "x": 200, "y": 0.16, "size": 22 },
+        { "kind": "tree", "x": 40, "size": 46, "seed": 6 },
+        { "kind": "tree", "x": 430, "size": 40, "seed": 7 },
+        { "kind": "bush", "x": 150, "size": 22, "seed": 8 },
+        { "kind": "flower", "x": 90, "size": 14, "seed": 9 },
+        { "kind": "flower", "x": 300, "size": 14, "seed": 10 }
+      ],
+      "actors": [
+        {
+          "who": "vit",
+          "size": 20,
+          "at": [
+            { "t": 0, "x": 120 },
+            { "t": 9, "x": 400 }
+          ]
+        }
+      ],
+      "effects": [{ "kind": "petals", "count": 30 }]
+    },
+    {
+      "id": "troi-toi",
+      "duration": 10,
+      "time": 0.86,
+      "ground": 0.8,
+      "water": true,
+      "caption": {
+        "text": "Trời tối rất nhanh. Mặt nước không còn trong như gương nữa.",
+        "sub": "— Mẹ ơi! — tiếng gọi nhỏ dần trên mặt hồ."
+      },
+      "camera": [
+        { "t": 0, "x": 200, "zoom": 1 },
+        { "t": 10, "x": 180, "zoom": 1.12 }
+      ],
+      "hills": [
+        { "seed": 231, "depth": 0.2, "amp": 0.46, "freq": 1.2, "sharp": 0.45 },
+        { "seed": 232, "depth": 0.5, "amp": 0.22, "freq": 2.1 }
+      ],
+      "props": [
+        { "kind": "bush", "x": 60, "size": 30, "seed": 11 },
+        { "kind": "rock", "x": 420, "size": 20, "seed": 12 }
+      ],
+      "actors": [
+        {
+          "who": "vit",
+          "size": 20,
+          "at": [
+            { "t": 0, "x": 300 },
+            { "t": 6, "x": 250 },
+            { "t": 10, "x": 258 }
+          ]
+        }
+      ],
+      "effects": [{ "kind": "fireflies", "count": 30 }]
+    },
+    {
+      "id": "mua",
+      "duration": 9,
+      "time": 0.5,
+      "weather": { "kind": "rain", "strength": 0.9 },
+      "caption": {
+        "text": "Mưa xuống. Vịt con nép dưới bụi cây, ướt và lạnh.",
+        "sub": "Nhưng vịt thì không sợ nước — chỉ sợ ở một mình."
+      },
+      "camera": [
+        { "t": 0, "x": 220, "zoom": 1.02 },
+        { "t": 9, "x": 230, "zoom": 1.1 }
+      ],
+      "hills": [
+        { "seed": 241, "depth": 0.3, "amp": 0.38, "freq": 1.7 },
+        { "seed": 242, "depth": 0.7, "amp": 0.16, "freq": 3 }
+      ],
+      "props": [
+        { "kind": "bush", "x": 250, "size": 40, "seed": 13 },
+        { "kind": "bush", "x": 190, "size": 24, "seed": 14 },
+        { "kind": "tree", "x": 400, "size": 44, "seed": 15 }
+      ],
+      "actors": [
+        {
+          "who": "vit",
+          "size": 20,
+          "lane": 4,
+          "at": [
+            { "t": 0, "x": 215 },
+            { "t": 9, "x": 225 }
+          ]
+        }
+      ],
+      "effects": [{ "kind": "leaves", "count": 34 }]
+    },
+    {
+      "id": "me-goi",
+      "duration": 10,
+      "time": 0.26,
+      "weather": { "kind": "fog", "strength": 0.5 },
+      "ground": 0.8,
+      "water": true,
+      "caption": {
+        "text": "Sáng ra, sương tan. Mẹ đứng bên kia bờ, gọi mãi.",
+        "sub": "— Cục ta cục tác! Con ở đâu?"
+      },
+      "camera": [
+        { "t": 0, "x": 150, "zoom": 1.08 },
+        { "t": 10, "x": 160, "zoom": 1 }
+      ],
+      "hills": [
+        { "seed": 251, "depth": 0.2, "amp": 0.44, "freq": 1.3 },
+        { "seed": 252, "depth": 0.55, "amp": 0.22, "freq": 2.3 }
+      ],
+      "props": [
+        { "kind": "tree", "x": 30, "size": 42, "seed": 16 },
+        { "kind": "bush", "x": 420, "size": 26, "seed": 17 }
+      ],
+      "actors": [
+        {
+          "who": "me",
+          "size": 40,
+          "lane": 2,
+          "at": [
+            { "t": 0, "x": 245 },
+            { "t": 10, "x": 235 }
+          ]
+        },
+        {
+          "who": "vit",
+          "size": 20,
+          "lane": 0,
+          "at": [
+            { "t": 0, "x": 55 },
+            { "t": 10, "x": 150 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ve-nha",
+      "duration": 11,
+      "time": 0.46,
+      "ground": 0.78,
+      "water": true,
+      "caption": {
+        "text": "Vịt con chạy ào vào lòng mẹ. Từ hôm ấy, nó không đi xa nữa.",
+        "sub": "Hết truyện. Chúc bé ngủ ngon."
+      },
+      "camera": [
+        { "t": 0, "x": 170, "zoom": 1.02 },
+        { "t": 11, "x": 150, "zoom": 1.12 }
+      ],
+      "hills": [
+        { "seed": 261, "depth": 0.22, "amp": 0.42, "freq": 1.4, "sharp": 0.3 },
+        { "seed": 262, "depth": 0.6, "amp": 0.22, "freq": 2.4 }
+      ],
+      "props": [
+        { "kind": "cloud", "x": 90, "y": 0.15, "size": 26 },
+        { "kind": "cloud", "x": 380, "y": 0.19, "size": 18 },
+        { "kind": "flower", "x": 60, "size": 14, "seed": 18 },
+        { "kind": "flower", "x": 100, "size": 14, "seed": 19 },
+        { "kind": "tree", "x": 440, "size": 42, "seed": 20 }
+      ],
+      "actors": [
+        {
+          "who": "me",
+          "size": 40,
+          "lane": 2,
+          "at": [
+            { "t": 0, "x": 205 },
+            { "t": 11, "x": 215 }
+          ]
+        },
+        {
+          "who": "vit",
+          "size": 20,
+          "lane": 3,
+          "at": [
+            { "t": 0, "x": 250 },
+            { "t": 11, "x": 228 }
+          ]
+        },
+        {
+          "who": "ban",
+          "size": 19,
+          "lane": 1,
+          "at": [
+            { "t": 0, "x": 300 },
+            { "t": 11, "x": 245 }
+          ]
+        }
+      ],
+      "effects": [{ "kind": "petals", "count": 22 }]
+    }
+  ]
+}
