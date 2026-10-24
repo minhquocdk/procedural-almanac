@@ -131,9 +131,11 @@ goes. The same scene runs in two places:
 - **A storybook**, [`examples/storybook/`](examples/storybook/): a story is one JSON file -- a cast of animals with
   their genes, a list of scenes, a line of narration and a time of day for each -- and the engine draws it as a pixel
   film, with a seekable `frame(f)`, a player that runs it as a live wallpaper, and a format short enough to hand to a
-  language model. Three stories in Vietnamese -- *Ba chu heo con*, *Vit con tim me*, and *Lac Long Quan · Au Co*, with a
-  dragon that flies, a fairy with beating wings, a nest of a hundred eggs and a boat putting out to sea -- and a
-  validator that answers a bad script with the line and the key that is wrong. [Run the player](https://blaiselabs.github.io/procedural-almanac/examples/storybook/)
+  language model. Four stories in Vietnamese -- *Ba chu heo con*, *Vit con tim me*, *Lac Long Quan · Au Co*, with a
+  dragon that flies, a fairy with beating wings, a nest of a hundred eggs and a boat putting out to sea, and *Su tich Ho
+  Guom*, the Lake of the Returned Sword looked down on as a map of terraces, with a golden turtle and a sword in the
+  water -- and a validator that answers a bad script with the line and the key that is wrong. A scene is told either
+  from the side (`view: "side"`, the default) or from above (`view: "island"`). [Run the player](https://blaiselabs.github.io/procedural-almanac/examples/storybook/)
   (or `python3 -m http.server 8000` and open `http://localhost:8000/examples/storybook/`).
 
   ```sh

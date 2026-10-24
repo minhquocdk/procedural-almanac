@@ -7,6 +7,17 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `examples/storybook/`: a second way to see a story, `view: "island"` -- the same scene looked down on as a map of
+  tiles, its land terraced up out of the water, `invert` for a lake ringed by its shore, people and things placed by
+  tile and drawn far to near, the camera panning and zooming over the map. Three more props, `turtle`, `sword` and
+  `islet` (a mound with a stone tower); the story `stories/su-tich-ho-guom.json`, the legend of the Lake of the
+  Returned Sword in six scenes -- the jade lake at dawn, the blade in the net, the crowd on the shore, the boats at
+  dusk, the golden turtle rising, and the lake at night with the tower lit.
+
+- `examples/storybook/`: the hour's colour grade is applied (it was handed a buffer where it wanted the frame's
+  pixels, so dusk, dawn and night were drawn plain). Older stories keep their day frames pixel for pixel; their dawn,
+  dusk and night scenes now darken and warm as the palette says.
+
 - `examples/storybook/`: two more kinds of character, `dragon` (a serpentine body that ripples through the air, horned
   head, whisker, ridge of spines, four clawed legs) and `fairy` (a long dress, long hair, butterfly wings that beat, a
   glow); three more props, `palm`, `boat` and `nest` (a bowl of straw with `eggs` in it); two more effects, `bubbles` and

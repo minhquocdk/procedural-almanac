@@ -154,7 +154,20 @@ const DEFAULT_PALETTE = {
   star: '#e8eefc',
 };
 
-const PROP_KINDS = new Set(['tree', 'bush', 'house', 'rock', 'cloud', 'flower', 'palm', 'boat', 'nest']);
+const PROP_KINDS = new Set([
+  'tree',
+  'bush',
+  'house',
+  'rock',
+  'cloud',
+  'flower',
+  'palm',
+  'boat',
+  'nest',
+  'turtle',
+  'sword',
+  'islet',
+]);
 const EFFECT_KINDS = new Set([
   'rain',
   'snow',
@@ -866,6 +879,126 @@ function buildBoat(rng, size, pal) {
   return { w, h, px: B.px, ax: Math.round(w * 0.46), ay: deckY + 3 };
 }
 
+// a turtle surfaced: a domed shell of plates, flippers out at its sides, and its head craned forward
+function buildTurtle(rng, size, pal, p) {
+  const w = Math.max(24, Math.round(size * 1.5)),
+    h = Math.max(14, Math.round(size * 0.86)),
+    B = buffer(w, h),
+    ink = hex(pal.ink),
+    tint = p.colour || '#d9b558',
+    gold = hex(tint),
+    goldL = shadeOf(tint, 0.24),
+    goldD = shadeOf(tint, -0.26),
+    goldRim = shadeOf(tint, -0.42),
+    skin = almanac.mixPacked(hex(pal.leaf), gold, 0.25),
+    skinD = shadeOf(pal.leaf, -0.3),
+    cx = w * 0.44,
+    cy = h * 0.58,
+    sw = w * 0.36,
+    sh = h * 0.38;
+  // the flippers first, so they show beyond the shell, then the tail
+  const flipper = (fx, fy, fw, fh, c) => almanac.fillEllipse(B, w * fx, h * fy, w * fw, h * fh, c);
+  flipper(0.14, 0.58, 0.11, 0.09, skinD);
+  flipper(0.22, 0.8, 0.12, 0.1, skinD);
+  flipper(0.52, 0.22, 0.1, 0.08, skin);
+  flipper(0.66, 0.8, 0.12, 0.1, skin);
+  almanac.fillEllipse(B, w * 0.06, h * 0.56, w * 0.05, h * 0.06, skinD);
+  // the shell: a rim, the dome, the light on it, and its plates
+  almanac.fillEllipse(B, cx, cy, sw + 1.5, sh + 1.5, goldRim);
+  almanac.fillEllipse(B, cx, cy, sw, sh, gold);
+  almanac.fillEllipse(B, cx - sw * 0.1, cy - sh * 0.28, sw * 0.62, sh * 0.5, goldL);
+  const plate = (u, v, r) => almanac.fillEllipse(B, cx + sw * u, cy + sh * v, sw * r, sh * r * 1.1, goldD);
+  plate(0, 0.05, 0.26);
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * TAU + 0.6;
+    plate(Math.cos(a) * 0.62, Math.sin(a) * 0.55 + 0.05, 0.17);
+  }
+  // the head: a neck out of the shell, a broad head, an eye and the line of its mouth
+  fillRect(B, w * 0.66, h * 0.4, w * 0.84, h * 0.56, skinD);
+  almanac.fillEllipse(B, w * 0.86, h * 0.48, w * 0.15, h * 0.19, skin);
+  almanac.fillEllipse(B, w * 0.87, h * 0.56, w * 0.11, h * 0.1, skinD);
+  B.px[Math.round(h * 0.42) * w + Math.round(w * 0.92)] = ink;
+  B.px[Math.round(h * 0.42) * w + Math.round(w * 0.9)] = shadeOf(tint, 0.55);
+  almanac.outlinePass(B, ink);
+  return { w, h, px: B.px, ax: Math.round(w * 0.44), ay: h - 2 };
+}
+
+// a little islet: a mound of grass and sand with a stone tower on it, its window the islet's lamp
+function buildIslet(rng, size, pal) {
+  const w = Math.max(26, Math.round(size * 1.4)),
+    h = Math.max(20, Math.round(size * 1.25)),
+    B = buffer(w, h),
+    ink = hex(pal.ink),
+    sand = hex(pal.sand),
+    sandD = shadeOf(pal.sand, -0.14),
+    grass = hex(pal.ground),
+    grassD = hex(pal.groundDark),
+    stone = hex(pal.stone),
+    stoneD = hex(pal.stoneRoof),
+    roof = hex(pal.woodRoof),
+    midY = Math.round(h * 0.72),
+    tw = Math.max(5, Math.round(w * 0.2)),
+    tx = Math.round(w * 0.5 - tw / 2),
+    topY = Math.round(h * 0.3);
+  // the mound: sand to the water, grass over it
+  almanac.fillEllipse(B, w * 0.5, midY, w * 0.48, h * 0.2, sand);
+  almanac.fillEllipse(B, w * 0.5, midY - h * 0.02, w * 0.44, h * 0.16, sandD);
+  almanac.fillEllipse(B, w * 0.5, midY - h * 0.06, w * 0.44, h * 0.2, grass);
+  almanac.fillEllipse(B, w * 0.48, midY - h * 0.15, w * 0.3, h * 0.1, grassD);
+  // the tower: a tapered block, a conical roof, a window, a door
+  for (let y = topY; y < midY; y++) {
+    const k = (y - topY) / Math.max(1, midY - topY),
+      half = Math.round(tw * (0.5 + k * 0.12));
+    fillRect(B, tx + tw / 2 - half, y, tx + tw / 2 + half, y, y % 3 === 2 ? stoneD : stone);
+  }
+  almanac.polygonRows(
+    [
+      [w * 0.5, topY - Math.round(h * 0.13)],
+      [w * 0.5 + tw * 0.9, topY + 1],
+      [w * 0.5 - tw * 0.9, topY + 1],
+    ],
+    h,
+    (y, xa, xb) => {
+      if (xb >= xa) B.px.fill(roof, y * B.w + Math.max(0, xa), y * B.w + Math.min(B.w - 1, xb) + 1);
+    },
+  );
+  const winY = topY + Math.round((midY - topY) * 0.4),
+    winX = Math.round(tx + tw / 2);
+  B.px[winY * w + winX] = hex(pal.window);
+  B.px[(winY + 1) * w + winX] = hex(pal.window);
+  almanac.outlinePass(B, ink);
+  return { w, h, px: B.px, ax: Math.round(w * 0.5), ay: h - 2, window: [winX - Math.round(w * 0.5), winY - (h - 2)] };
+  return s2;
+}
+
+// a sword standing in the water: a tapered blade, a crossguard, a grip and a pommel
+function buildSword(rng, size, pal, p) {
+  const w = Math.max(11, Math.round(size * 0.52)),
+    h = Math.max(26, Math.round(size * 1.5)),
+    B = buffer(w, h),
+    ink = hex(pal.ink),
+    steel = hex(p.colour || '#dde8f2'),
+    steelD = shadeOf(p.colour || '#dde8f2', -0.24),
+    steelL = shadeOf(p.colour || '#dde8f2', 0.5),
+    gold = hex('#e8b64a'),
+    goldD = shadeOf('#e8b64a', -0.3),
+    grip = shadeOf(pal.wood, -0.16),
+    cx = w >> 1,
+    guard = Math.round(h * 0.66);
+  for (let y = 1; y < guard; y++) {
+    const half = Math.max(0, Math.round((y / guard) * (w * 0.16)));
+    fillRect(B, cx - half, y, cx + half, y, steel);
+    B.px[y * w + Math.max(0, cx - half)] = steelD;
+    B.px[y * w + Math.min(w - 1, cx + half)] = steelL;
+  }
+  fillRect(B, cx - Math.round(w * 0.42), guard, cx + Math.round(w * 0.42), guard + 2, gold);
+  fillRect(B, cx - Math.round(w * 0.42), guard + 2, cx + Math.round(w * 0.42), guard + 2, goldD);
+  fillRect(B, cx - 1, guard + 3, cx + 1, h - 6, grip);
+  fillRect(B, cx - 2, h - 5, cx + 2, h - 3, gold);
+  almanac.outlinePass(B, ink);
+  return { w, h, px: B.px, ax: cx, ay: h - 2 };
+}
+
 // a nest of eggs: a bowl of woven straw with the eggs standing in it, the back row first
 function buildNest(rng, size, pal, p) {
   const eggs = Math.max(1, Math.min(24, Math.round(p.eggs || 9))),
@@ -916,6 +1049,8 @@ export function validate(script) {
   const bad = (path, msg) => out.push(`${path}: ${msg}`);
   if (!script || typeof script !== 'object') return ['script: a story is a JSON object'];
   if (!script.title) bad('title', 'a story needs a title');
+  if (script.view !== undefined && script.view !== 'side' && script.view !== 'island')
+    bad('view', '"side", to be watched from the side, or "island", to be looked down on');
   if (!script.scenes || !Array.isArray(script.scenes) || !script.scenes.length)
     return out.concat(['scenes: a list of at least one scene']);
   const cast = script.cast || {};
@@ -952,11 +1087,45 @@ export function validate(script) {
       if (layer.depth !== undefined && !(layer.depth >= 0 && layer.depth <= 1))
         bad(`${at}.hills`, 'depth is 0 (far) .. 1 (near)');
     }
+    const view = sc.view || script.view || 'side';
+    if (view !== 'side' && view !== 'island')
+      bad(`${at}.view`, '"side", to be watched from the side, or "island", to be looked down on');
+    if (sc.island) {
+      if (typeof sc.island !== 'object') bad(`${at}.island`, 'an object: how the map is made');
+      else {
+        const ranges = {
+          tiles: [24, 220],
+          levels: [2, 9],
+          lift: [1, 10],
+          land: [0.08, 0.92],
+          cell: [2, 16],
+          cool: [0.3, 1],
+          shear: [-1.2, 1.2],
+          seed: [0, 99999],
+          rough: [0, 1],
+        };
+        for (const [k, [lo, hi]] of Object.entries(ranges))
+          if (
+            sc.island[k] !== undefined &&
+            !(typeof sc.island[k] === 'number' && sc.island[k] >= lo && sc.island[k] <= hi)
+          )
+            bad(`${at}.island.${k}`, `a number, ${lo}..${hi}`);
+        for (const k of ['long', 'invert'])
+          if (sc.island[k] !== undefined && typeof sc.island[k] !== 'boolean')
+            bad(`${at}.island.${k}`, 'true or false');
+      }
+    }
     for (const p of sc.props || []) {
       if (!PROP_KINDS.has(p.kind)) bad(`${at}.props`, `"${p.kind}" is not a prop (${[...PROP_KINDS].join(', ')})`);
       if (p.kind === 'house' && p.style && !HOUSE_STYLES.has(p.style))
         bad(`${at}.props`, `"${p.style}" is not a house style (${[...HOUSE_STYLES].join(', ')})`);
       if (typeof p.x !== 'number') bad(`${at}.props`, 'a prop needs an x (in picture pixels, 0 at the left)');
+      if (view === 'island') {
+        if (typeof p.y !== 'number')
+          bad(`${at}.props`, "looked down on, a prop needs a y too (both are tiles, 0 at the map's top left)");
+        if (p.size !== undefined && typeof p.size !== 'number')
+          bad(`${at}.props.${p.kind}`, 'size is a number of pixels, the way the sprite is drawn');
+      }
     }
     for (const a of sc.actors || []) {
       if (!cast[a.who]) bad(`${at}.actors`, `"${a.who}" is not in the cast`);
@@ -965,6 +1134,8 @@ export function validate(script) {
         let last = -Infinity;
         for (const kf of a.at) {
           if (typeof kf.x !== 'number') bad(`${at}.actors.${a.who}.at`, 'each keyframe needs an x');
+          if (view === 'island' && kf.y !== undefined && typeof kf.y !== 'number')
+            bad(`${at}.actors.${a.who}.at`, "looked down on, a keyframe's y is in tiles as well");
           if (!(kf.t >= last)) bad(`${at}.actors.${a.who}.at`, 'keyframe times must go up');
           last = kf.t;
         }
@@ -975,24 +1146,35 @@ export function validate(script) {
         bad(`${at}.effects`, `"${e.kind}" is not an effect (${[...EFFECT_KINDS].join(', ')})`);
     if (sc.weather && !['clear', 'rain', 'snow', 'storm', 'fog'].includes(sc.weather.kind))
       bad(`${at}.weather.kind`, '"clear", "rain", "snow", "storm" or "fog"');
+    for (const k of sc.camera || []) {
+      if (typeof k.t !== 'number') bad(`${at}.camera`, 'each key of the camera path needs a t, in seconds');
+      for (const f of ['x', 'y', 'zoom'])
+        if (k[f] !== undefined && typeof k[f] !== 'number')
+          bad(`${at}.camera.${f}`, 'a number (y only means something looked down on)');
+    }
   });
   return out;
 }
 
-// the camera at a moment: a keyframe path, eased, each key { t, x, zoom }
+// the camera at a moment: a keyframe path, eased, each key { t, x, y, zoom } (y only means something in the island
+// view, where the camera looks down on tiles)
 function cameraAt(list, t) {
-  if (!list || !list.length) return { x: 0, zoom: 1 };
-  if (t <= list[0].t) return { x: list[0].x || 0, zoom: list[0].zoom || 1 };
+  if (!list || !list.length) return { x: 0, y: 0, zoom: 1 };
+  if (t <= list[0].t) return { x: list[0].x || 0, y: list[0].y || 0, zoom: list[0].zoom || 1 };
   for (let i = 0; i < list.length - 1; i++) {
     const a = list[i],
       b = list[i + 1];
     if (t <= b.t) {
       const u = almanac.smoothstep(0, 1, (t - a.t) / Math.max(1e-6, b.t - a.t));
-      return { x: almanac.lerp(a.x || 0, b.x || 0, u), zoom: almanac.lerp(a.zoom || 1, b.zoom || 1, u) };
+      return {
+        x: almanac.lerp(a.x || 0, b.x || 0, u),
+        y: almanac.lerp(a.y || 0, b.y || 0, u),
+        zoom: almanac.lerp(a.zoom || 1, b.zoom || 1, u),
+      };
     }
   }
   const last = list[list.length - 1];
-  return { x: last.x || 0, zoom: last.zoom || 1 };
+  return { x: last.x || 0, y: last.y || 0, zoom: last.zoom || 1 };
 }
 
 // where a walker is at a moment, and how far it has walked (which is what turns its legs)
@@ -1011,6 +1193,30 @@ function trackAt(at, t) {
   }
   const last = at[at.length - 1];
   return { x: last.x, dist, dir: 1 };
+}
+
+// where a walker is on the island at a moment, over tiles: x and y, and how far it has walked (for its legs)
+function trackAt2(at, t) {
+  const ty = (k) => (k.y === undefined ? 0 : k.y);
+  let dist = 0;
+  if (t <= at[0].t) return { x: at[0].x, y: ty(at[0]), dist: 0, dir: 1 };
+  for (let i = 0; i < at.length - 1; i++) {
+    const a = at[i],
+      b = at[i + 1],
+      len = Math.hypot(b.x - a.x, ty(b) - ty(a));
+    if (t <= b.t) {
+      const u = (t - a.t) / Math.max(1e-6, b.t - a.t);
+      return {
+        x: almanac.lerp(a.x, b.x, u),
+        y: almanac.lerp(ty(a), ty(b), u),
+        dist: dist + len * u,
+        dir: Math.sign(b.x - a.x) || 1,
+      };
+    }
+    dist += len;
+  }
+  const last = at[at.length - 1];
+  return { x: last.x, y: ty(last), dist, dir: 1 };
 }
 
 // ---------------------------------------------------------------------------------------------- the film
@@ -1088,6 +1294,13 @@ export function storybook(script, o = {}) {
     lightningFlash,
     waterTime,
     waterPixel,
+    islandHeight,
+    levelCut,
+    terraceLevel,
+    chamferDistance,
+    wallShade,
+    mixColour,
+    latticeRandom,
   } = A;
 
   const W = Math.round(o.size || script.size || 480),
@@ -1102,7 +1315,12 @@ export function storybook(script, o = {}) {
     },
     inkHex = pal.ink,
     cast = script.cast || {},
-    scenes = script.scenes.map((s, i) => ({ ...s, id: s.id || `scene-${i + 1}`, duration: +s.duration }));
+    scenes = script.scenes.map((s, i) => ({
+      ...s,
+      id: s.id || `scene-${i + 1}`,
+      duration: +s.duration,
+      view: s.view || script.view || 'side',
+    }));
 
   const DUR = scenes.reduce((a, s) => a + s.duration, 0),
     frames = Math.max(1, Math.round(DUR * FPS));
@@ -1135,10 +1353,11 @@ export function storybook(script, o = {}) {
   }
 
   function propSprite(kind, p, sceneId) {
-    const key = `${sceneId}|${kind}|${p.style || ''}|${p.size || 32}|${p.seed || 0}|${p.x}`;
+    // the key is also the seed a prop's shape grows from, so it keeps its old form unless the prop has a colour
+    const key = `${sceneId}|${kind}|${p.style || ''}|${p.size || 32}|${p.seed || 0}|${p.x}${p.colour ? `|${p.colour}` : ''}`;
     if (sprites.has(key)) return sprites.get(key);
     const rng = new SeededRandom(`${seedWords}|${key}`),
-      size = (p.size || (kind === 'house' ? 54 : 32)) * SC;
+      size = (p.size || (kind === 'house' ? 54 : kind === 'turtle' || kind === 'islet' ? 40 : 32)) * SC;
     let s;
     if (kind === 'tree') s = buildTree(rng, size, pal);
     else if (kind === 'bush') s = buildBush(rng, size * 0.8, pal);
@@ -1148,6 +1367,9 @@ export function storybook(script, o = {}) {
     else if (kind === 'palm') s = buildPalm(rng, size, pal);
     else if (kind === 'boat') s = buildBoat(rng, size, pal);
     else if (kind === 'nest') s = buildNest(rng, size, pal, p);
+    else if (kind === 'turtle') s = buildTurtle(rng, size, pal, p);
+    else if (kind === 'sword') s = buildSword(rng, size, pal, p);
+    else if (kind === 'islet') s = buildIslet(rng, size, pal);
     else s = buildHouse(p.style || 'straw', rng, size, pal);
     sprites.set(key, s);
     return s;
@@ -1174,22 +1396,18 @@ export function storybook(script, o = {}) {
   const skyRows = new Int32Array(H); // a packed colour a row, rebuilt per frame
   const FRAME = new Uint32Array(W * H);
 
+  // a moment of the picture, told by whichever view its scene asks for
   function render(t) {
-    const frame = FRAME;
-    frame.fill(0);
-    const { index, scene, local } = sceneAt(t);
-    const day = dayCycle(pal.sky, scene.time === undefined ? 0.42 : scene.time);
-    const tod = (day.t - 0.25 + 1) % 1; // hourLight's clock: 0.25 noon, 0.75 midnight
-    const groundShare = scene.ground === undefined ? 0.74 : scene.ground,
-      groundY = Math.round(H * groundShare);
-    const cam = cameraAt(scene.camera, local);
-    const wet = scene.weather && (scene.weather.kind === 'rain' || scene.weather.kind === 'storm') ? 0.7 : 0;
-    const hour = hourLight(tod, 1, wet);
-    const night = hour.night;
-    const top = pack(day.top),
-      horiz = pack(day.horizon);
+    const { scene, local } = sceneAt(t);
+    return scene.view === 'island' ? renderIsland(scene, local, t) : renderSide(scene, local, t);
+  }
 
-    // ---------------------------------------------------------------- the sky
+  // ---------------------------------------------------------------- the sky, and what hangs in it
+  // one sky for both views: a gradient down to the horizon, stars, and the sun or the moon
+  function paintSky(day, t, groundY, showBody = true) {
+    const frame = FRAME,
+      top = pack(day.top),
+      horiz = pack(day.horizon);
     for (let y = 0; y < groundY; y++) {
       const u = Math.pow(clamp(y / Math.max(1, groundY - 1)), 1.35);
       skyRows[y] = mixPacked(top, horiz, u * 0.9);
@@ -1207,7 +1425,7 @@ export function storybook(script, o = {}) {
       }
     }
     const body = day.light > 0.12 ? { p: day.sun, c: hex(pal.sun) } : { p: day.moon, c: hex(pal.moon) };
-    if (body.p && body.p.y > -0.15) {
+    if (showBody && body.p && body.p.y > -0.15) {
       const cx = Math.round((body.p.x / 2) * W),
         cy = Math.round(groundY * 0.92 - body.p.y * groundY * 0.85);
       const halo = 10 * SC;
@@ -1222,6 +1440,102 @@ export function storybook(script, o = {}) {
       );
       fillEllipse({ w: W, h: H, px: frame }, cx, cy, 5 * SC, 5 * SC, body.c);
     }
+    return { top, horiz };
+  }
+
+  // a storm's lightning: strikes at times of its own, each a flash fading over a third of a second
+  function stormStrikes(local) {
+    for (let k = 0; k < 40; k++) {
+      const strike = 1.2 + k * 5.3 + indexRandom(k, SEED) * 1.6;
+      if (local >= strike && local < strike + 0.34) lightningFlash(FRAME, 0.34 - (local - strike));
+    }
+  }
+
+  // ---------------------------------------------------------------- weather and small things
+  // rain, snow, petals, fireflies, sparks: drawn over the picture, the same in either view
+  function paintWeather(scene, local, t, camX, lights) {
+    const frame = FRAME;
+    const effects = [...(scene.effects || [])];
+    const weatherKind = scene.weather && scene.weather.kind,
+      strength = scene.weather && scene.weather.strength !== undefined ? scene.weather.strength : 1;
+    if (weatherKind === 'rain' || weatherKind === 'storm')
+      effects.push({ kind: 'rain', count: Math.round(150 * strength) });
+    if (weatherKind === 'snow') effects.push({ kind: 'snow', count: Math.round(90 * strength) });
+    if (weatherKind === 'fog') effects.push({ kind: 'fog' });
+    const buf = { w: W, h: H, px: frame };
+
+    for (const e of effects) {
+      if (e.kind === 'fog') {
+        fogBanks(buf, W, H, {
+          x: camX * 0.6 + local * 7,
+          y: 0,
+          density: (e.density === undefined ? 0.45 : e.density) * strength,
+          seed: SEED,
+        });
+        continue;
+      }
+      if (e.kind === 'lightning') continue; // struck below, over everything
+      const count = e.count || (e.kind === 'rain' ? 150 : e.kind === 'snow' ? 90 : 40),
+        field = fieldFor(scene.id, e.kind, count),
+        petal = hex(e.colour || pal.petal),
+        ageT = local * (weatherKind === 'storm' ? 1.25 : 1);
+      for (const q0 of field) {
+        let q;
+        if (e.kind === 'rain') q = fall(q0, ageT, { speed: 330 * strength, wind: 45 * strength, sway: [0.6, 1.5] });
+        else if (e.kind === 'snow')
+          q = fall(q0, ageT, { speed: 26 * strength, wind: 9, sway: [1.4, 8], bob: [0.8, 3] });
+        else if (e.kind === 'petals') q = fall(q0, ageT, { speed: 22, wind: 13, sway: [0.9, 12] });
+        else if (e.kind === 'leaves') q = fall(q0, ageT, { speed: 34, wind: 20, sway: [1.1, 16] });
+        else if (e.kind === 'fireflies')
+          q = hover(q0, ageT, { x: [0.7, 10], y: [0.5, 6], camera: camX * 0.2, byDepth: true });
+        else if (e.kind === 'bubbles') q = rise(q0, ageT, { speed: 26, spread: 18, sway: [2.2, 5] });
+        else if (e.kind === 'sparks') q = rise(q0, ageT, { speed: 34, spread: 30, sway: [3.2, 9] });
+        else q = hover(q0, ageT, { x: [0.3, 4], y: [0.25, 3], camera: camX * 0.1 });
+        // a particle law is linear in dt, so a moment can be reached in one step -- and one step may be many
+        // screens' worth of falling: wrapping it by modulo keeps it in view however far it has come
+        const x = Math.round(wrap(q.x + 24, W + 48) - 24),
+          y = Math.round(wrap(q.y + 24, H + 48) - 24);
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        if (e.kind === 'rain') {
+          const c = mixPacked(frame[y * W + x], hex('#eaf6ff'), 0.72);
+          frame[y * W + x] = c;
+          if (y + 1 < H) frame[(y + 1) * W + x] = mixPacked(frame[(y + 1) * W + x], hex('#eaf6ff'), 0.45);
+          if (y + 2 < H) frame[(y + 2) * W + x] = mixPacked(frame[(y + 2) * W + x], hex('#eaf6ff'), 0.2);
+        } else if (e.kind === 'fireflies') {
+          const b = twinkle(t * 1.6, q0.p, 0.5);
+          if (b > 0.35) {
+            frame[y * W + x] = mixPacked(frame[y * W + x], hex('#fff0a8'), clamp(b));
+            lights.push({ x, y, r: 16, k: 0.45 * b });
+          }
+        } else if (e.kind === 'bubbles') {
+          frame[y * W + x] = mixPacked(frame[y * W + x], hex('#cdeaf7'), 0.7);
+          if (x + 1 < W && q0.s > 0.55) frame[y * W + x + 1] = mixPacked(frame[y * W + x + 1], hex('#f2fbff'), 0.55);
+        } else if (e.kind === 'sparks') {
+          const b = twinkle(t * 5, q0.p, 0.6);
+          if (b > 0.25) {
+            frame[y * W + x] = mixPacked(frame[y * W + x], hex(e.colour || '#ffd98a'), clamp(0.4 + b));
+            if (b > 0.8) lights.push({ x, y, r: 10, k: 0.3 });
+          }
+        } else {
+          frame[y * W + x] = mixPacked(frame[y * W + x], e.kind === 'snow' ? hex('#ffffff') : petal, 0.85);
+        }
+      }
+    }
+  }
+
+  function renderSide(scene, local, t) {
+    const frame = FRAME;
+    frame.fill(0);
+    const day = dayCycle(pal.sky, scene.time === undefined ? 0.42 : scene.time);
+    const tod = (day.t - 0.25 + 1) % 1; // hourLight's clock: 0.25 noon, 0.75 midnight
+    const groundShare = scene.ground === undefined ? 0.74 : scene.ground,
+      groundY = Math.round(H * groundShare);
+    const cam = cameraAt(scene.camera, local);
+    const weatherKind = scene.weather && scene.weather.kind,
+      wet = weatherKind === 'rain' || weatherKind === 'storm' ? 0.7 : 0;
+    const hour = hourLight(tod, 1, wet);
+    const night = hour.night;
+    const { top, horiz } = paintSky(day, t, groundY);
 
     // clouds, far behind the hills
     for (const p of scene.props || []) {
@@ -1270,19 +1584,7 @@ export function storybook(script, o = {}) {
     });
 
     // ---------------------------------------------------------------- the ground, or the water
-    const seaPalette = (() => {
-      const sea = rgbOf(pal.sea);
-      return {
-        LV: [0, 1, 2, 3, 4, 5, 6].map((i) => pack(shade(sea, 0.16 - i * 0.07))),
-        FOAM: hex('#f2fbfd'),
-        FOAM2: mixPacked(hex('#f2fbfd'), hex(pal.sea), 0.35),
-        GLINT: hex('#ffffff'),
-        GLINT2: mixPacked(hex('#ffffff'), hex(pal.sea), 0.45),
-        WEED: pack(shade(rgbOf('#2f6a45'), 0)),
-        WEED2: pack(shade(rgbOf('#2f6a45'), 0.14)),
-        SAND: [0, 1, 2].map((i) => pack(shade(rgbOf(pal.sand), 0.04 - i * 0.06))),
-      };
-    })();
+    const seaPalette = seaColours();
     if (scene.water) {
       const T = waterTime(local, Math.floor(local * 15)),
         buf = { w: W, h: H, px: frame };
@@ -1366,72 +1668,7 @@ export function storybook(script, o = {}) {
     for (const d of drawn) d.draw();
 
     // ---------------------------------------------------------------- weather and small things
-    const effects = [...(scene.effects || [])];
-    const weatherKind = scene.weather && scene.weather.kind,
-      strength = scene.weather && scene.weather.strength !== undefined ? scene.weather.strength : 1;
-    if (weatherKind === 'rain' || weatherKind === 'storm')
-      effects.push({ kind: 'rain', count: Math.round(150 * strength) });
-    if (weatherKind === 'snow') effects.push({ kind: 'snow', count: Math.round(90 * strength) });
-    if (weatherKind === 'fog') effects.push({ kind: 'fog' });
-    const buf = { w: W, h: H, px: frame };
-
-    for (const e of effects) {
-      if (e.kind === 'fog') {
-        fogBanks(buf, W, H, {
-          x: cam.x * 0.6 + local * 7,
-          y: 0,
-          density: (e.density === undefined ? 0.45 : e.density) * strength,
-          seed: SEED,
-        });
-        continue;
-      }
-      if (e.kind === 'lightning') continue; // struck below, over everything
-      const count = e.count || (e.kind === 'rain' ? 150 : e.kind === 'snow' ? 90 : 40),
-        field = fieldFor(scene.id, e.kind, count),
-        petal = hex(e.colour || pal.petal),
-        ageT = local * (weatherKind === 'storm' ? 1.25 : 1);
-      for (const q0 of field) {
-        let q;
-        if (e.kind === 'rain') q = fall(q0, ageT, { speed: 330 * strength, wind: 45 * strength, sway: [0.6, 1.5] });
-        else if (e.kind === 'snow')
-          q = fall(q0, ageT, { speed: 26 * strength, wind: 9, sway: [1.4, 8], bob: [0.8, 3] });
-        else if (e.kind === 'petals') q = fall(q0, ageT, { speed: 22, wind: 13, sway: [0.9, 12] });
-        else if (e.kind === 'leaves') q = fall(q0, ageT, { speed: 34, wind: 20, sway: [1.1, 16] });
-        else if (e.kind === 'fireflies')
-          q = hover(q0, ageT, { x: [0.7, 10], y: [0.5, 6], camera: cam.x * 0.2, byDepth: true });
-        else if (e.kind === 'bubbles') q = rise(q0, ageT, { speed: 26, spread: 18, sway: [2.2, 5] });
-        else if (e.kind === 'sparks') q = rise(q0, ageT, { speed: 34, spread: 30, sway: [3.2, 9] });
-        else q = hover(q0, ageT, { x: [0.3, 4], y: [0.25, 3], camera: cam.x * 0.1 });
-        // a particle law is linear in dt, so a moment can be reached in one step -- and one step may be many
-        // screens' worth of falling: wrapping it by modulo keeps it in view however far it has come
-        const x = Math.round(wrap(q.x + 24, W + 48) - 24),
-          y = Math.round(wrap(q.y + 24, H + 48) - 24);
-        if (x < 0 || y < 0 || x >= W || y >= H) continue;
-        if (e.kind === 'rain') {
-          const c = mixPacked(frame[y * W + x], hex('#eaf6ff'), 0.72);
-          frame[y * W + x] = c;
-          if (y + 1 < H) frame[(y + 1) * W + x] = mixPacked(frame[(y + 1) * W + x], hex('#eaf6ff'), 0.45);
-          if (y + 2 < H) frame[(y + 2) * W + x] = mixPacked(frame[(y + 2) * W + x], hex('#eaf6ff'), 0.2);
-        } else if (e.kind === 'fireflies') {
-          const b = twinkle(t * 1.6, q0.p, 0.5);
-          if (b > 0.35) {
-            frame[y * W + x] = mixPacked(frame[y * W + x], hex('#fff0a8'), clamp(b));
-            lights.push({ x, y, r: 16, k: 0.45 * b });
-          }
-        } else if (e.kind === 'bubbles') {
-          frame[y * W + x] = mixPacked(frame[y * W + x], hex('#cdeaf7'), 0.7);
-          if (x + 1 < W && q0.s > 0.55) frame[y * W + x + 1] = mixPacked(frame[y * W + x + 1], hex('#f2fbff'), 0.55);
-        } else if (e.kind === 'sparks') {
-          const b = twinkle(t * 5, q0.p, 0.6);
-          if (b > 0.25) {
-            frame[y * W + x] = mixPacked(frame[y * W + x], hex(e.colour || '#ffd98a'), clamp(0.4 + b));
-            if (b > 0.8) lights.push({ x, y, r: 10, k: 0.3 });
-          }
-        } else {
-          frame[y * W + x] = mixPacked(frame[y * W + x], e.kind === 'snow' ? hex('#ffffff') : petal, 0.85);
-        }
-      }
-    }
+    paintWeather(scene, local, t, cam.x, lights);
 
     // the windows of the houses, lit after dark
     if (night > 0.12)
@@ -1450,14 +1687,383 @@ export function storybook(script, o = {}) {
       }
 
     // ---------------------------------------------------------------- the hour, over all of it
-    gradeFrame(buf, W, H, hourTables(hour.night, hour.dusk, hour.morning, 1, wet), { night: hour.night, lights });
+    gradeFrame(frame, W, H, hourTables(hour.night, hour.dusk, hour.morning, 1, wet), { night: hour.night, lights });
 
-    if (weatherKind === 'storm') {
-      for (let k = 0; k < 40; k++) {
-        const strike = 1.2 + k * 5.3 + indexRandom(k, SEED) * 1.6;
-        if (local >= strike && local < strike + 0.34) lightningFlash(frame, 0.34 - (local - strike));
+    if (weatherKind === 'storm') stormStrikes(local);
+    return frame;
+  }
+
+  // ---------------------------------------------------------------- the island view
+  // `view: "island"` tells a scene from above: a map of tiles, the land terraced as it rises out of the water,
+  // people and things placed on it by tile, drawn far to near. The sky, the weather, the hour and every sprite are
+  // the side view's; only the ground is drawn differently -- so the same cast can be seen either way.
+  const ISLAND = {
+    tiles: 104, // the map's width, and its depth, in tiles
+    levels: 5, // terraces, from the water to the top of the land
+    lift: 4, // pixels a terrace stands above the one below (at 480 wide)
+    land: 0.34, // how much of the map is land
+    seed: 9, // the map's own shape: the same in every telling, so a script's tiles keep their ground
+    rough: 0.55,
+    long: false, // stretched along x, like a spit of land, or round like a headland
+    invert: false, // land round the edge and water in the middle: a lake, not an island
+    shear: 0.45, // how far a row back leans aside
+    cool: 0.72, // how much shorter a row back is than a row across
+    cell: 6, // pixels across a tile (at 480 wide)
+  };
+
+  const grids = new Map();
+  // the map itself: heights, terraces, and how far every tile is from the water. Made once for a scene.
+  function islandGrid(scene) {
+    const o = { ...ISLAND, ...(scene.island || {}) };
+    const key = `${scene.id}|${JSON.stringify(o)}`;
+    if (grids.has(key)) return grids.get(key);
+    const N = Math.round(clamp(o.tiles, 24, 220)),
+      GH = N;
+    const E = new Float32Array(N * GH);
+    for (let ty = 0; ty < GH; ty++)
+      for (let tx = 0; tx < N; tx++) E[ty * N + tx] = islandHeight(tx, ty, N, o.seed, { long: o.long, rough: o.rough });
+    // a 3x3 smoothing, a few times over: terraces want broad shoulders, not the noise's own speckle
+    for (let pass = 0; pass < 3; pass++) {
+      const S = Float32Array.from(E);
+      for (let ty = 1; ty < GH - 1; ty++)
+        for (let tx = 1; tx < N - 1; tx++) {
+          let sum = 0;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) sum += S[(ty + dy) * N + tx + dx];
+          E[ty * N + tx] = sum / 9;
+        }
+    }
+    // the water's height is set by how much of the map it covers, not by a height that means nothing alone
+    const sorted = Float32Array.from(E).sort(),
+      CUT = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * (1 - o.land)))];
+    // how far above the water a tile stands: the height over the cut, or under it for a lake
+    const lift = (e) => (o.invert ? CUT - e : e - CUT);
+    const above = [];
+    for (let i = 0; i < E.length; i++) if (o.invert ? E[i] < CUT : E[i] >= CUT) above.push(lift(E[i]));
+    above.sort((a, b) => a - b);
+    const STEP = Math.max(1e-5, (above[Math.floor(above.length * 0.97)] || 1) / (o.levels - 1));
+    const LEV = new Int8Array(N * GH),
+      LIFT = new Float32Array(N * GH),
+      land = new Uint8Array(N * GH),
+      water = new Uint8Array(N * GH);
+    for (let i = 0; i < E.length; i++) {
+      const on = o.invert ? E[i] < CUT : E[i] >= CUT;
+      land[i] = on ? 1 : 0;
+      water[i] = on ? 0 : 1;
+      LEV[i] = on ? terraceLevel(lift(E[i]), STEP, o.levels) : -1;
+      LIFT[i] = Math.max(0, LEV[i]); // how many steps up it stands; the pixels come from `rise`
+    }
+    // where the land is, so the camera can open on it when the script does not say where to look
+    let x0 = N,
+      x1 = 0,
+      y0 = GH,
+      y1 = 0;
+    for (let ty = 0; ty < GH; ty++)
+      for (let tx = 0; tx < N; tx++)
+        if (LEV[ty * N + tx] >= 0) {
+          x0 = Math.min(x0, tx);
+          x1 = Math.max(x1, tx);
+          y0 = Math.min(y0, ty);
+          y1 = Math.max(y1, ty);
+        }
+    const grid = {
+      N,
+      GH,
+      LEV,
+      LIFT,
+      cx: x1 > x0 ? (x0 + x1) / 2 : N / 2,
+      cy: y1 > y0 ? (y0 + y1) / 2 : GH / 2,
+      D: chamferDistance(land, N, GH), // how far a tile of land is from the water, in thirds of a tile
+      DW: chamferDistance(water, N, GH), // and a tile of water from the land
+      o,
+    };
+    grids.set(key, grid);
+    return grid;
+  }
+
+  const SEA = new Map();
+  // the sea's colours, from the palette: seven shades of it, foam, glints, weed and the sand under the shallows
+  function seaColours() {
+    if (SEA.has('p')) return SEA.get('p');
+    const sea = rgbOf(pal.sea),
+      P = {
+        LV: [0, 1, 2, 3, 4, 5, 6].map((i) => pack(shade(sea, 0.16 - i * 0.07))),
+        FOAM: hex('#f2fbfd'),
+        FOAM2: mixPacked(hex('#f2fbfd'), hex(pal.sea), 0.35),
+        GLINT: hex('#ffffff'),
+        GLINT2: mixPacked(hex('#ffffff'), hex(pal.sea), 0.45),
+        WEED: pack(shade(rgbOf('#2f6a45'), 0)),
+        WEED2: pack(shade(rgbOf('#2f6a45'), 0.14)),
+        SAND: [0, 1, 2].map((i) => pack(shade(rgbOf(pal.sand), 0.04 - i * 0.06))),
+      };
+    SEA.set('p', P);
+    return P;
+  }
+
+  function renderIsland(scene, local, t) {
+    const frame = FRAME;
+    frame.fill(0);
+    const day = dayCycle(pal.sky, scene.time === undefined ? 0.42 : scene.time);
+    const tod = (day.t - 0.25 + 1) % 1; // hourLight's clock: 0.25 noon, 0.75 midnight
+    const weatherKind = scene.weather && scene.weather.kind,
+      wet = weatherKind === 'rain' || weatherKind === 'storm' ? 0.7 : 0;
+    const hour = hourLight(tod, 1, wet),
+      night = hour.night,
+      horiz = pack(day.horizon);
+
+    const g = islandGrid(scene),
+      { N, GH, LEV, LIFT, D, DW } = g,
+      o = g.o;
+    const cam = cameraAt(scene.camera, local),
+      camX = cam.x === undefined || cam.x === 0 ? g.cx : cam.x,
+      camY = cam.y === undefined || cam.y === 0 ? g.cy : cam.y,
+      zoom = cam.zoom || 1,
+      cell = Math.max(1.5, o.cell * SC * zoom),
+      cellY = cell * o.cool,
+      rise = o.lift * SC * zoom, // a terrace's height, in pixels
+      shear = o.shear * cellY;
+    const rowY = (ty) => (ty - camY) * cellY + H * 0.52,
+      rowX = (ty) => -camX * cell + shear * (ty - camY) + W / 2;
+    const tileAt = (tx, ty) => Math.round(clamp(ty, 0, GH - 1)) * N + Math.round(clamp(tx, 0, N - 1));
+    const liftAt = (tx, ty) => LIFT[tileAt(tx, ty)] * rise;
+
+    const C = {
+      grass: hex(pal.ground),
+      grassD: hex(pal.groundDark),
+      sand: hex(pal.sand),
+      sandD: shadeOf(pal.sand, -0.09),
+      soil: mixPacked(shadeOf(pal.bark, 0.04), hex(pal.sand), 0.28),
+      soilD: mixPacked(shadeOf(pal.bark, -0.2), hex(pal.sand), 0.18),
+      rock: hex(pal.stoneRoof),
+      foam: hex('#f2fbfd'),
+      sun: hex(pal.sun),
+    };
+    // the island's own sea: the same water, its weed softened so it does not read as reefs from above
+    const plain = seaColours(),
+      seaP = {
+        ...plain,
+        WEED: mixPacked(plain.WEED, plain.LV[3], 0.72),
+        WEED2: mixPacked(plain.WEED2, plain.LV[3], 0.66),
+      },
+      view = { w: W, h: H, px: frame },
+      lights = [];
+    const T = waterTime(local, Math.floor(local * 15)),
+      waterOx = Math.round(camX * cell),
+      waterOy = Math.round(camY * cellY);
+
+    // ---------------------------------------------------------------- what stands on the map, by row
+    const rows = new Map(),
+      flying = [];
+    const put = (ty, item) => {
+      const k = clamp(Math.round(ty), 0, GH - 1);
+      let list = rows.get(k);
+      if (!list) rows.set(k, (list = []));
+      list.push(item);
+    };
+
+    for (const p of scene.props || []) {
+      if (p.kind === 'cloud') continue;
+      const s = propSprite(p.kind, p, scene.id),
+        tx = p.x,
+        ty = p.y === undefined ? GH * 0.6 : p.y,
+        bob = p.kind === 'boat' ? Math.sin(local * 1.5 + (p.seed || 0) * 3) * 1.2 * SC : 0;
+      put(ty, {
+        x: tx,
+        draw: () => {
+          const sx = rowX(ty) + tx * cell,
+            sy = rowY(ty) - liftAt(tx, ty) + (p.lift || 0) * SC + bob;
+          if (p.kind === 'tree' || p.kind === 'palm' || p.kind === 'bush')
+            blitSway(view, s, sx, sy, (h) =>
+              Math.round(
+                Math.sin(t * 1.1 + (p.seed || 0)) * (h / Math.max(1, s.h)) * (p.sway === undefined ? 1.4 : p.sway),
+              ),
+            );
+          else blitSprite(view, s, sx, sy, p.flip);
+          if (s.window && night > 0.12)
+            // a house's window, or the islet's tower
+            lights.push({ x: sx + s.window[0], y: sy + s.window[1], r: 20 * SC, k: 0.5 + 0.1 * twinkle(t, p.x) });
+        },
+      });
+    }
+
+    for (const a of scene.actors || []) {
+      const coats = a.coats && a.coats.length ? a.coats : null,
+        sheet = sheetFor(a.who, a.size, coats && coats[0]),
+        air = !!sheet.frames[0].air, // wings beat with the clock; feet step with the distance walked
+        track = trackAt2(a.at, local),
+        n = Math.max(1, Math.min(24, Math.round(a.crowd || 1))),
+        spread = a.spread === undefined ? 1.1 : a.spread,
+        stridePx = track.dist * cell;
+      for (let i = 0; i < n; i++) {
+        const off = (i - (n - 1) / 2) * spread,
+          tx = track.x + off,
+          ty = track.y + ((i % 2) - 0.5) * 0.6,
+          phase = air ? local * 2.1 + i * 0.9 + (a.phase || 0) : stridePx * strideRate(sheet.stride) + i * 2.1,
+          idx = ((Math.round((phase / TAU) * PHASES) % PHASES) + PHASES) % PHASES,
+          own = coats ? sheetFor(a.who, a.size, coats[i % coats.length]) : sheet,
+          sprite = own.frames[idx],
+          bob = air
+            ? Math.sin(local * 2.1 + i) * 2 * SC
+            : a.hover
+              ? Math.sin(local * 1.7 + i * 1.3 + (a.phase || 0)) * a.hover * SC
+              : 0,
+          item = {
+            x: tx,
+            glow: a.glow,
+            draw: () => {
+              const sx = rowX(ty) + tx * cell,
+                sy = rowY(ty) - liftAt(tx, ty) + (a.lane || 0) * SC + bob;
+              blitSprite(view, sprite, sx, sy, track.dir < 0);
+              if (a.glow)
+                lights.push({
+                  x: sx,
+                  y: sy - sprite.h * 0.55,
+                  r: a.glow * SC,
+                  k: 0.42 + 0.12 * Math.sin(local * 1.6 + i),
+                });
+            },
+          };
+        // a thing in the air is over the land, not behind it; `layer` orders one flyer against another
+        if (air) flying.push({ ...item, y: (a.layer || 0) * 1000 + ty });
+        else put(ty, item);
       }
     }
+
+    // ---------------------------------------------------------------- the map, far to near
+    // a margin of rows and columns past the map's own edge, where its edge tile simply goes on, so that no
+    // straight line of the map's end ever shows inside the picture
+    const topRows = Math.max(1, Math.round(cellY * 0.72)),
+      M = 30,
+      left = new Int32Array(H).fill(W), // the sea goes in afterwards, where the map left room for it
+      right = new Int32Array(H).fill(-1),
+      cover = (ya, yb, xa, xb) => {
+        for (let y = ya; y < yb; y++) {
+          if (xa < left[y]) left[y] = xa;
+          if (xb > right[y]) right[y] = xb;
+        }
+      };
+    for (let ty = -M; ty < GH + M; ty++) {
+      const ry = rowY(ty),
+        rx = rowX(ty);
+      if (ry - 8 * rise > H + cellY) break; // everything nearer is under the picture
+      for (let tx = -M; tx < N + M; tx++) {
+        const x0 = Math.round(rx + tx * cell),
+          x1 = Math.round(rx + (tx + 1) * cell),
+          xa = Math.max(0, x0),
+          xb = Math.min(W, x1);
+        if (xb <= xa) continue;
+        const i = tileAt(tx, ty),
+          lev = LEV[i],
+          yTop = Math.round(ry - LIFT[i] * rise),
+          frontLift = LIFT[tileAt(tx, ty + 1)] * rise,
+          yBot = Math.round(ry + cellY - frontLift),
+          ya = Math.max(0, yTop),
+          yb = Math.min(H, yBot);
+        if (yb <= ya) continue;
+
+        if (lev < 0) {
+          // water: as deep as it is far from the shore, with foam by a beach
+          const far = (DW[i] / 3) * cell,
+            d = Math.min(40, far * 0.4),
+            near = far < 9,
+            wob = Math.round(Math.sin(ry * 0.4 + local * 2.2)),
+            fade = clamp(0.4 - ty / GH, 0, 0.32);
+          for (let y = ya; y < yb; y++)
+            for (let x = xa; x < xb; x++) {
+              const c = waterPixel(x + waterOx, y + waterOy, d, near, 0, T, wob, seaP);
+              frame[y * W + x] = fade > 0.02 ? mixPacked(c, horiz, fade) : c;
+            }
+          cover(ya, yb, xa, xb);
+          continue;
+        }
+
+        // land: a terrace top, its edge catching the light, and the earth wall down to the terrace in front
+        const n = latticeRandom(tx, ty, o.seed + 7),
+          shore = D[i] / 3, // tiles to the water
+          beach = shore < 2.4,
+          top = o.levels - 1;
+        let surf;
+        if (beach) surf = lev === 0 ? (n < 0.45 ? C.sand : C.sandD) : mixPacked(C.sand, C.grass, 0.3 + n * 0.2);
+        else if (lev >= top) surf = mixPacked(C.grass, C.rock, 0.3 + n * 0.25);
+        else surf = mixPacked(C.grass, C.sand, Math.min(0.35, (lev - 1) * 0.05 + (n < 0.14 ? 0.12 : 0)));
+        if (n > 0.94 && !beach) surf = C.grassD;
+        const rim = mixPacked(surf, C.sun, 0.24),
+          // the wall under the edge: the tile's own earth, textured by the way it is lit, in one colour a tile
+          wall = mixPacked(
+            mixPacked(
+              mixPacked(surf, C.soil, 0.42),
+              mixPacked(surf, C.soilD, 0.5),
+              clamp((wallShade('earth', tx & 15, 3) - 0.45) / 0.55),
+            ),
+            surf,
+            0.18,
+          ),
+          foot = mixPacked(surf, C.soilD, 0.55);
+        for (let y = ya; y < yb; y++) {
+          const c = y - yTop < topRows ? (y === yTop ? rim : surf) : wall;
+          frame.fill(c, y * W + xa, y * W + xb);
+        }
+        if (yBot - 1 >= ya && yBot - 1 < yb) frame.fill(foot, (yBot - 1) * W + xa, (yBot - 1) * W + xb);
+        cover(ya, yb, xa, xb);
+        // the sea at its foot: a line of foam, on the sand of a beach
+        if (LEV[tileAt(tx, ty + 1)] < 0 && yBot - 1 < H && yBot - 1 >= 0)
+          frame.fill(lev === 0 ? C.foam : mixPacked(C.sand, C.foam, 0.5), (yBot - 1) * W + xa, (yBot - 1) * W + xb);
+      }
+
+      const list = rows.get(ty);
+      if (list && ty >= 0 && ty < GH) {
+        list.sort((p, q) => p.x - q.x);
+        for (const it of list) it.draw();
+      }
+    }
+
+    // the seams: now and then a step's edge rounds past its neighbour and leaves a pixel no tile reached, so
+    // each one takes the colour of the pixel beside it, and the land never shows a hole
+    for (let y = 0; y < H; y++) {
+      if (right[y] < 0) continue;
+      const row = y * W,
+        from = Math.max(0, left[y]),
+        to = Math.min(W, right[y]);
+      let last = 0;
+      for (let x = from; x < to; x++) {
+        const i = row + x;
+        if (frame[i] === 0) frame[i] = last;
+        else last = frame[i];
+      }
+      let next = 0;
+      for (let x = to - 1; x >= from; x--) {
+        const i = row + x;
+        if (frame[i] === 0) frame[i] = next;
+        else next = frame[i];
+      }
+    }
+
+    // the open sea: whatever the map left uncovered is still water, so the picture has no edge
+    const seaRow = (y, from, to) => {
+      const fade = clamp(0.34 * (1 - y / (H * 0.62)), 0, 0.34); // far water takes the sky's colour
+      for (let x = from; x < to; x++) {
+        const c = waterPixel(x + waterOx, y + waterOy, 90, false, 0, T, 0, seaP);
+        frame[y * W + x] = fade > 0.01 ? mixPacked(c, horiz, fade) : c;
+      }
+    };
+    for (let y = 0; y < H; y++) {
+      if (right[y] < 0) seaRow(y, 0, W);
+      else {
+        if (left[y] > 0) seaRow(y, 0, left[y]);
+        if (right[y] < W) seaRow(y, right[y], W);
+      }
+    }
+
+    // birds, and anything else in the air, over it all
+    flying.sort((p, q) => p.y - q.y);
+    for (const it of flying) it.draw();
+
+    // ---------------------------------------------------------------- weather and small things
+    paintWeather(scene, local, t, camX * cell, lights);
+
+    // ---------------------------------------------------------------- the hour, over all of it
+    gradeFrame(frame, W, H, hourTables(hour.night, hour.dusk, hour.morning, 1, wet), { night: hour.night, lights });
+
+    if (weatherKind === 'storm') stormStrikes(local);
     return frame;
   }
 

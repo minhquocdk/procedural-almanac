@@ -1,0 +1,712 @@
+{
+  "title": "Sự tích Hồ Gươm",
+  "lang": "vi",
+  "seed": "ho-guom",
+  "size": 480,
+  "fps": 20,
+  "palette": {
+    "sky": {
+      "night": ["#0b1430", "#22335e"],
+      "dawn": ["#4f5a96", "#f6c9a0"],
+      "day": ["#5fa8df", "#d6ecf8"],
+      "dusk": ["#4b3f7c", "#f3a06e"]
+    },
+    "ground": "#8fbf72",
+    "groundDark": "#74a45f",
+    "sea": "#2f8fa6",
+    "sand": "#e9d7a0",
+    "leaf": "#4f8f52",
+    "bark": "#6f4f33",
+    "bloom": "#f3c4d8",
+    "ink": "#1d2030"
+  },
+  "cast": {
+    "le-loi": {
+      "kind": "kid",
+      "genes": {
+        "size": 22,
+        "coat": "#b8432f"
+      }
+    },
+    "dan-lang": {
+      "kind": "kid",
+      "genes": {
+        "size": 18,
+        "coat": "#e8d3a8"
+      }
+    },
+    "chim": {
+      "kind": "bird",
+      "genes": {
+        "size": 13,
+        "coat": "#f4efe0"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "id": "ho-trong-xanh",
+      "view": "island",
+      "duration": 10,
+      "time": 0.32,
+      "island": {
+        "tiles": 96,
+        "land": 0.42,
+        "cell": 4.6,
+        "cool": 0.8,
+        "invert": true,
+        "seed": 9,
+        "levels": 4
+      },
+      "caption": {
+        "text": "Giữa kinh thành Thăng Long có một hồ nước xanh như ngọc.",
+        "sub": "Hồ Tả Vọng"
+      },
+      "camera": [
+        {
+          "t": 0,
+          "x": 48,
+          "y": 44,
+          "zoom": 1
+        },
+        {
+          "t": 10,
+          "x": 50,
+          "y": 46,
+          "zoom": 1.06
+        }
+      ],
+      "props": [
+        {
+          "kind": "palm",
+          "x": 8,
+          "y": 40,
+          "size": 40,
+          "seed": 1
+        },
+        {
+          "kind": "palm",
+          "x": 11,
+          "y": 35,
+          "size": 34,
+          "seed": 2
+        },
+        {
+          "kind": "tree",
+          "x": 6,
+          "y": 47,
+          "size": 36,
+          "seed": 3
+        },
+        {
+          "kind": "house",
+          "x": 9,
+          "y": 51,
+          "size": 42,
+          "style": "straw"
+        },
+        {
+          "kind": "palm",
+          "x": 88,
+          "y": 42,
+          "size": 38,
+          "seed": 4
+        },
+        {
+          "kind": "tree",
+          "x": 86,
+          "y": 48,
+          "size": 34,
+          "seed": 5
+        },
+        {
+          "kind": "bush",
+          "x": 12,
+          "y": 44,
+          "size": 16,
+          "seed": 6
+        },
+        {
+          "kind": "islet",
+          "x": 58,
+          "y": 49,
+          "size": 48
+        },
+        {
+          "kind": "boat",
+          "x": 38,
+          "y": 42,
+          "size": 30,
+          "seed": 7
+        }
+      ],
+      "actors": [
+        {
+          "who": "chim",
+          "size": 13,
+          "at": [
+            {
+              "t": 0,
+              "x": 28,
+              "y": 30
+            },
+            {
+              "t": 10,
+              "x": 72,
+              "y": 36
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "luoi-guom",
+      "view": "island",
+      "duration": 10,
+      "time": 0.42,
+      "island": {
+        "tiles": 96,
+        "land": 0.42,
+        "cell": 4.6,
+        "cool": 0.8,
+        "invert": true,
+        "seed": 9,
+        "levels": 4
+      },
+      "caption": {
+        "text": "Một hôm, Lê Lợi kéo lưới trên hồ, được một lưỡi gươm.",
+        "sub": "Lưỡi gươm khắc hai chữ “Thuận Thiên”."
+      },
+      "camera": [
+        {
+          "t": 0,
+          "x": 44,
+          "y": 52,
+          "zoom": 1.45
+        },
+        {
+          "t": 10,
+          "x": 45.5,
+          "y": 51,
+          "zoom": 1.6
+        }
+      ],
+      "props": [
+        {
+          "kind": "boat",
+          "x": 40,
+          "y": 54,
+          "size": 36,
+          "seed": 8
+        },
+        {
+          "kind": "sword",
+          "x": 47,
+          "y": 50,
+          "size": 40
+        },
+        {
+          "kind": "islet",
+          "x": 62,
+          "y": 44,
+          "size": 44
+        }
+      ],
+      "actors": [
+        {
+          "who": "le-loi",
+          "size": 22,
+          "lane": -4,
+          "at": [
+            {
+              "t": 0,
+              "x": 40.3,
+              "y": 54
+            },
+            {
+              "t": 10,
+              "x": 40.3,
+              "y": 54
+            }
+          ]
+        },
+        {
+          "who": "chim",
+          "size": 13,
+          "at": [
+            {
+              "t": 0,
+              "x": 30,
+              "y": 38
+            },
+            {
+              "t": 10,
+              "x": 60,
+              "y": 36
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "kind": "sparks",
+          "count": 16
+        }
+      ]
+    },
+    {
+      "id": "chuoi-guom",
+      "view": "island",
+      "duration": 10,
+      "time": 0.5,
+      "island": {
+        "tiles": 96,
+        "land": 0.42,
+        "cell": 4.6,
+        "cool": 0.8,
+        "invert": true,
+        "seed": 9,
+        "levels": 4
+      },
+      "caption": {
+        "text": "Ít lâu sau, ông lại vớt được một chuôi gươm nạm ngọc.",
+        "sub": "Tra lưỡi vào chuôi, vừa in như một."
+      },
+      "camera": [
+        {
+          "t": 0,
+          "x": 46.5,
+          "y": 89,
+          "zoom": 2.4
+        },
+        {
+          "t": 10,
+          "x": 47.5,
+          "y": 88.5,
+          "zoom": 2.55
+        }
+      ],
+      "props": [
+        {
+          "kind": "sword",
+          "x": 47,
+          "y": 88.5,
+          "size": 38
+        },
+        {
+          "kind": "house",
+          "x": 42,
+          "y": 91,
+          "size": 48,
+          "style": "wood"
+        },
+        {
+          "kind": "palm",
+          "x": 52,
+          "y": 90,
+          "size": 44,
+          "seed": 11
+        },
+        {
+          "kind": "palm",
+          "x": 40,
+          "y": 89,
+          "size": 34,
+          "seed": 21
+        },
+        {
+          "kind": "bush",
+          "x": 49.5,
+          "y": 92,
+          "size": 20,
+          "seed": 12
+        },
+        {
+          "kind": "rock",
+          "x": 44,
+          "y": 92,
+          "size": 18,
+          "seed": 13
+        }
+      ],
+      "actors": [
+        {
+          "who": "le-loi",
+          "size": 28,
+          "at": [
+            {
+              "t": 0,
+              "x": 45.5,
+              "y": 90
+            },
+            {
+              "t": 10,
+              "x": 46.6,
+              "y": 90
+            }
+          ]
+        },
+        {
+          "who": "dan-lang",
+          "size": 20,
+          "crowd": 5,
+          "spread": 1.1,
+          "at": [
+            {
+              "t": 0,
+              "x": 49.5,
+              "y": 91
+            },
+            {
+              "t": 10,
+              "x": 49.5,
+              "y": 91
+            }
+          ],
+          "coats": ["#c9b48a", "#8fa8c8", "#b98a7a", "#9ab48f", "#c8a0b4"]
+        }
+      ],
+      "effects": [
+        {
+          "kind": "sparks",
+          "count": 20
+        },
+        {
+          "kind": "petals",
+          "count": 14
+        }
+      ]
+    },
+    {
+      "id": "ra-tran",
+      "view": "island",
+      "duration": 10,
+      "time": 0.72,
+      "island": {
+        "tiles": 96,
+        "land": 0.42,
+        "cell": 4.6,
+        "cool": 0.8,
+        "invert": true,
+        "seed": 9,
+        "levels": 4
+      },
+      "caption": {
+        "text": "Có gươm báu trong tay, nghĩa quân đánh đâu thắng đó.",
+        "sub": "Giặc Minh phải rút về nước."
+      },
+      "camera": [
+        {
+          "t": 0,
+          "x": 46,
+          "y": 55,
+          "zoom": 1.55
+        },
+        {
+          "t": 10,
+          "x": 52,
+          "y": 53,
+          "zoom": 1.4
+        }
+      ],
+      "props": [
+        {
+          "kind": "boat",
+          "x": 44,
+          "y": 56,
+          "size": 36,
+          "seed": 13
+        },
+        {
+          "kind": "boat",
+          "x": 54,
+          "y": 51,
+          "size": 32,
+          "seed": 14
+        },
+        {
+          "kind": "islet",
+          "x": 62,
+          "y": 46,
+          "size": 44
+        },
+        {
+          "kind": "palm",
+          "x": 13,
+          "y": 62,
+          "size": 40,
+          "seed": 23
+        }
+      ],
+      "actors": [
+        {
+          "who": "le-loi",
+          "size": 24,
+          "lane": -4,
+          "at": [
+            {
+              "t": 0,
+              "x": 44.3,
+              "y": 56
+            },
+            {
+              "t": 10,
+              "x": 44.3,
+              "y": 56
+            }
+          ]
+        },
+        {
+          "who": "dan-lang",
+          "size": 20,
+          "lane": -4,
+          "at": [
+            {
+              "t": 0,
+              "x": 54.3,
+              "y": 51
+            },
+            {
+              "t": 10,
+              "x": 54.3,
+              "y": 51
+            }
+          ]
+        },
+        {
+          "who": "chim",
+          "size": 13,
+          "at": [
+            {
+              "t": 0,
+              "x": 60,
+              "y": 38
+            },
+            {
+              "t": 10,
+              "x": 26,
+              "y": 42
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "kind": "sparks",
+          "count": 14
+        }
+      ]
+    },
+    {
+      "id": "rua-vang",
+      "view": "island",
+      "duration": 11,
+      "time": 0.8,
+      "island": {
+        "tiles": 96,
+        "land": 0.42,
+        "cell": 4.6,
+        "cool": 0.8,
+        "invert": true,
+        "seed": 9,
+        "levels": 4
+      },
+      "caption": {
+        "text": "Một hôm vua đi thuyền trên hồ, Rùa Vàng nổi lên đòi lại gươm.",
+        "sub": "“Xin bệ hạ trả lại Thanh Gươm cho Long Quân.”"
+      },
+      "camera": [
+        {
+          "t": 0,
+          "x": 46,
+          "y": 54,
+          "zoom": 1.35
+        },
+        {
+          "t": 11,
+          "x": 48,
+          "y": 53,
+          "zoom": 1.5
+        }
+      ],
+      "props": [
+        {
+          "kind": "turtle",
+          "x": 46,
+          "y": 52,
+          "size": 46,
+          "colour": "#d8b24e"
+        },
+        {
+          "kind": "sword",
+          "x": 50,
+          "y": 51,
+          "size": 34
+        },
+        {
+          "kind": "boat",
+          "x": 41,
+          "y": 57,
+          "size": 32,
+          "seed": 15
+        },
+        {
+          "kind": "islet",
+          "x": 64,
+          "y": 44,
+          "size": 44
+        }
+      ],
+      "actors": [
+        {
+          "who": "le-loi",
+          "size": 22,
+          "lane": -4,
+          "at": [
+            {
+              "t": 0,
+              "x": 41.3,
+              "y": 57
+            },
+            {
+              "t": 11,
+              "x": 41.3,
+              "y": 57
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "kind": "bubbles",
+          "count": 26
+        },
+        {
+          "kind": "sparks",
+          "count": 22
+        }
+      ]
+    },
+    {
+      "id": "ho-guom",
+      "view": "island",
+      "duration": 11,
+      "time": 0.92,
+      "island": {
+        "tiles": 96,
+        "land": 0.42,
+        "cell": 4.6,
+        "cool": 0.8,
+        "invert": true,
+        "seed": 9,
+        "levels": 4
+      },
+      "caption": {
+        "text": "Vua trả gươm, hồ từ đó mang tên Hồ Gươm.",
+        "sub": "Hồ Hoàn Kiếm, giữa lòng Hà Nội."
+      },
+      "camera": [
+        {
+          "t": 0,
+          "x": 48,
+          "y": 46,
+          "zoom": 1.1
+        },
+        {
+          "t": 11,
+          "x": 50,
+          "y": 44,
+          "zoom": 1
+        }
+      ],
+      "props": [
+        {
+          "kind": "islet",
+          "x": 56,
+          "y": 48,
+          "size": 48
+        },
+        {
+          "kind": "boat",
+          "x": 40,
+          "y": 54,
+          "size": 30,
+          "seed": 16
+        },
+        {
+          "kind": "palm",
+          "x": 8,
+          "y": 42,
+          "size": 38,
+          "seed": 17
+        },
+        {
+          "kind": "house",
+          "x": 9,
+          "y": 50,
+          "size": 40,
+          "style": "stone"
+        },
+        {
+          "kind": "tree",
+          "x": 87,
+          "y": 46,
+          "size": 34,
+          "seed": 18
+        },
+        {
+          "kind": "palm",
+          "x": 89,
+          "y": 40,
+          "size": 34,
+          "seed": 19
+        }
+      ],
+      "actors": [
+        {
+          "who": "le-loi",
+          "size": 20,
+          "lane": -4,
+          "at": [
+            {
+              "t": 0,
+              "x": 40.3,
+              "y": 54
+            },
+            {
+              "t": 11,
+              "x": 40.3,
+              "y": 54
+            }
+          ]
+        },
+        {
+          "who": "chim",
+          "size": 12,
+          "at": [
+            {
+              "t": 0,
+              "x": 70,
+              "y": 34
+            },
+            {
+              "t": 11,
+              "x": 30,
+              "y": 30
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "kind": "fireflies",
+          "count": 34
+        },
+        {
+          "kind": "bubbles",
+          "count": 12
+        }
+      ]
+    }
+  ]
+}
