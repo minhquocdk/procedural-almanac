@@ -128,6 +128,19 @@ goes. The same scene runs in two places:
   node examples/island/island.mjs --seed amber-vale-7     # another island
   ```
 
+- **Four live wallpapers**, [`examples/live/`](examples/live/) (at the short address
+  [`/live/`](https://blaiselabs.github.io/procedural-almanac/live/)): finished scenes, not stories to write -- Ha Long
+  at dawn, flooded rice terraces, Hoi An under its lanterns, a bamboo forest in afternoon rain. Each is a seamless
+  60-second loop and a pure `frame(f)`, grown from a seed by the almanac alone, in a player with a wallpaper mode and
+  a clock; the same URL is what a wallpaper engine or a kiosk points at
+  (`?scene=hoi-an&seed=amber-vale-7&wallpaper=1&clock=1`).
+  [Run them here](https://blaiselabs.github.io/procedural-almanac/live/), or check them in Node:
+
+  ```sh
+  node examples/live/live.mjs --check                                  # do the four loops close, and what a frame costs
+  node examples/live/live.mjs --scene rung-tre --still 34 bamboo.png   # one moment, photographed
+  ```
+
 - **A storybook**, [`examples/storybook/`](examples/storybook/): a story is one JSON file -- a cast of animals with
   their genes, a list of scenes, a line of narration and a time of day for each -- and the engine draws it as a pixel
   film, with a seekable `frame(f)`, a player that runs it as a live wallpaper, and a format short enough to hand to a
@@ -154,7 +167,7 @@ goes. The same scene runs in two places:
 | `tests/checks/`          | every check, one sentence each, the same sentences the entries list, a file per module; the drawing checks read real pixels (@napi-rs/canvas, a dev dependency only) |
 | `tests/run.mjs`          | `npm test`: the checks, then the almanac held to itself (below)                                                                                                      |
 | `CATALOG.md`, `gallery/` | written from the above by `npm run docs`                                                                                                                             |
-| `examples/`              | scenes that use only the almanac; `examples/island` is the island at the top of this page, live in a browser (`index.html`) or filmed in Node (`island.mjs`)         |
+| `examples/`              | scenes that use only the almanac: `island` (the top of this page), `live` (four looped wallpapers, also at `/live/`), `storybook` (stories as JSON)               |
 
 `npm test` fails when any of these is true:
 

@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Live wallpaper · procedural-almanac</title>
+    <meta
+      name="description"
+      content="Bốn cảnh Việt Nam vẽ sống bằng procedural-almanac: Hạ Long bình minh, ruộng bậc thang mùa nước đổ, Hội An đêm đèn lồng, rừng tre mưa chiều. Mỗi cảnh một vòng lặp 60 giây liền mạch, chạy như live wallpaper."
+    />
+    <style>
+      :root {
+        --bg: #f3efe2;
+        --panel: #fffdf6;
+        --ink: #1c2026;
+        --muted: #5d6268;
+        --line: #d9d1bc;
+        --sea: #1f5a92;
+        --gold: #b98a12;
+        --chip: #ece5d0;
+        --bad: #b3372c;
+        --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+        --body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0e1622;
+          --panel: #152132;
+          --ink: #ece6d6;
+          --muted: #9aa3ad;
+          --line: #263548;
+          --sea: #6fc6dc;
+          --gold: #ffd36e;
+          --chip: #1c2b40;
+          --bad: #ff9b9b;
+          color-scheme: dark;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.5 var(--body);
+        padding: 24px max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left));
+      }
+      main {
+        max-width: 1164px;
+        margin: 0 auto;
+        display: grid;
+        gap: 18px;
+      }
+      header {
+        display: grid;
+        gap: 4px;
+      }
+      .lib {
+        font: 600 14px/1.2 var(--mono);
+        color: var(--gold);
+        letter-spacing: 0.02em;
+      }
+      .lib a {
+        color: inherit;
+      }
+      h1 {
+        margin: 0;
+        font: 700 clamp(26px, 5vw, 38px)/1.1 var(--mono);
+        letter-spacing: -0.01em;
+        text-wrap: balance;
+      }
+      .sub {
+        margin: 0;
+        color: var(--muted);
+        max-width: 70ch;
+      }
+      .scenes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .scenes button {
+        text-align: left;
+        background: var(--panel);
+        color: var(--ink);
+        border: 2px solid var(--line);
+        padding: 8px 12px;
+        cursor: pointer;
+        display: grid;
+        gap: 2px;
+      }
+      .scenes button b {
+        font: 600 15px/1.2 var(--body);
+      }
+      .scenes button span {
+        font: 13px/1.3 var(--body);
+        color: var(--muted);
+      }
+      .scenes button[aria-pressed='true'] {
+        border-color: var(--ink);
+        outline: 2px solid var(--gold);
+        outline-offset: -2px;
+      }
+      .stage {
+        position: relative;
+        background: #16182a;
+        border: 3px solid var(--ink);
+        line-height: 0;
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        max-width: 100%;
+        height: auto;
+      }
+      .clock {
+        position: absolute;
+        right: 4%;
+        bottom: 6%;
+        text-align: right;
+        pointer-events: none;
+        color: #fffdf6;
+        text-shadow: 0 2px 0 #00000088, 0 0 18px #00000066;
+        display: none;
+      }
+      .clock.on {
+        display: block;
+      }
+      .clock .time {
+        font: 700 clamp(34px, 7vw, 76px)/1 var(--mono);
+        font-variant-numeric: tabular-nums;
+      }
+      .clock .date {
+        font: 600 clamp(13px, 2vw, 20px)/1.4 var(--body);
+        text-transform: capitalize;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        align-items: center;
+      }
+      .timeline {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex: 1 1 280px;
+        min-width: 0;
+      }
+      input[type='range'] {
+        flex: 1;
+        min-width: 0;
+        accent-color: var(--sea);
+      }
+      .where {
+        font: 14px/1.2 var(--mono);
+        color: var(--muted);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+        min-width: 13ch;
+      }
+      button {
+        font: 600 15px/1 var(--body);
+        color: var(--bg);
+        background: var(--ink);
+        border: 2px solid var(--ink);
+        padding: 9px 14px;
+        cursor: pointer;
+      }
+      button.quiet {
+        background: transparent;
+        color: var(--ink);
+      }
+      button.quiet[aria-pressed='true'] {
+        outline: 2px solid var(--gold);
+        outline-offset: -2px;
+      }
+      .seed {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      label {
+        font-size: 14px;
+        color: var(--muted);
+      }
+      input[type='text'] {
+        font: 15px/1.2 var(--mono);
+        color: var(--ink);
+        background: var(--panel);
+        border: 2px solid var(--line);
+        padding: 8px 10px;
+        width: 15ch;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      a:focus-visible {
+        outline: 3px solid var(--gold);
+        outline-offset: 2px;
+      }
+      .status {
+        margin: 0;
+        min-height: 1.5em;
+        font: 13px/1.5 var(--mono);
+        color: var(--muted);
+        white-space: pre-wrap;
+      }
+      .status.bad {
+        color: var(--bad);
+      }
+      section {
+        display: grid;
+        gap: 10px;
+        border-top: 2px solid var(--line);
+        padding-top: 14px;
+      }
+      h2 {
+        margin: 0;
+        font: 700 18px/1.3 var(--mono);
+      }
+      h2 b {
+        color: var(--gold);
+        font-variant-numeric: tabular-nums;
+      }
+      .used {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .used a {
+        display: inline-block;
+        font: 13px/1 var(--mono);
+        padding: 6px 8px;
+        background: var(--chip);
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .used a:hover {
+        color: var(--sea);
+      }
+      .used li.new a {
+        outline: 2px solid var(--gold);
+      }
+      footer {
+        color: var(--muted);
+        font-size: 14px;
+        display: grid;
+        gap: 4px;
+      }
+      footer code {
+        font: 13px var(--mono);
+      }
+      footer a {
+        color: var(--sea);
+      }
+      /* the wallpaper: nothing but the picture, looping, the clock if asked for */
+      body.wallpaper {
+        padding: 0;
+        background: #000;
+      }
+      body.wallpaper main {
+        max-width: none;
+        gap: 0;
+      }
+      body.wallpaper header,
+      body.wallpaper .scenes,
+      body.wallpaper .bar,
+      body.wallpaper .status,
+      body.wallpaper section,
+      body.wallpaper footer {
+        display: none;
+      }
+      body.wallpaper .stage {
+        width: auto;
+        max-width: none;
+        height: 100dvh;
+        border: 0;
+        background: #000;
+        display: grid;
+        place-items: center;
+        margin: 0;
+      }
+      body.wallpaper canvas {
+        max-width: 100vw;
+        max-height: 100dvh;
+      }
+      .pill {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        font: 12px/1 var(--mono);
+        color: var(--ink);
+        background: var(--panel);
+        border: 2px solid var(--ink);
+        padding: 7px 9px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        line-height: 1;
+      }
+      body.wallpaper .pill {
+        opacity: 1;
+      }
+      body.wallpaper.idle .pill {
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="lib"><a href="https://github.com/BlaiseLabs/procedural-almanac">procedural-almanac</a></div>
+        <h1 id="title">Live wallpaper</h1>
+        <p class="sub" id="sceneSub">
+          Bốn cảnh Việt Nam vẽ sống trong trình duyệt, chỉ bằng almanac — không sprite, không file ảnh. Mỗi cảnh là
+          một vòng lặp 60 giây liền mạch, sinh ra từ hạt giống của nó: đổi hạt giống là một vịnh khác, một dãy ruộng
+          khác, một dãy phố khác. Bấm <b>Wallpaper</b> để chỉ còn lại hình.
+        </p>
+      </header>
+
+      <ul class="scenes" id="scenes" aria-label="Chọn cảnh"></ul>
+
+      <div class="stage" id="stage">
+        <canvas id="screen" width="480" height="270" aria-label="Cảnh đang chạy"></canvas>
+        <div class="clock" id="clock" aria-hidden="true">
+          <div class="time" id="clockTime">--:--</div>
+          <div class="date" id="clockDate"></div>
+        </div>
+        <div class="pill" id="pill">wallpaper · esc để thoát</div>
+      </div>
+
+      <div class="bar">
+        <button type="button" id="play">Tạm dừng</button>
+        <div class="timeline">
+          <input type="range" id="scrub" min="0" max="1199" value="0" aria-label="Thời gian trong vòng lặp" />
+          <span class="where" id="where">0.0 s / 60 s</span>
+        </div>
+        <button type="button" class="quiet" id="speed" aria-label="Tốc độ">1×</button>
+        <button type="button" class="quiet" id="size">480 px</button>
+        <button type="button" class="quiet" id="clockToggle" aria-pressed="false">Giờ</button>
+        <button type="button" class="quiet" id="wall">Wallpaper</button>
+      </div>
+      <form class="seed" id="seedForm">
+        <label for="seed">Hạt giống</label>
+        <input type="text" id="seed" value="heron-bay-8" spellcheck="false" autocomplete="off" />
+        <button type="submit">Gieo</button>
+        <button type="button" class="quiet" id="random">Ngẫu nhiên</button>
+      </form>
+      <p class="status" id="status" role="status"></p>
+
+      <section>
+        <h2>Đã dùng: <b id="count">0</b> trong <span id="total">162</span> kỹ thuật</h2>
+        <ul class="used" id="used"></ul>
+      </section>
+
+      <footer>
+        <span>
+          Mọi hàm ở đây đều có mục trong
+          <a href="https://github.com/BlaiseLabs/procedural-almanac/blob/main/CATALOG.md">catalog</a> với nguồn và bài
+          kiểm của nó. Bốn cảnh là <code>examples/live/scenes.js</code>; trong Node,
+          <code>node examples/live/live.mjs --check</code> kiểm các vòng lặp có khít không. Xem thêm đảo
+          <a href="../island/">Lạc Long Quân · Âu Cơ</a> và <a href="../storybook/">truyện tranh pixel</a>.
+        </span>
+        <span>
+          <b>Space</b> chạy/tạm dừng · <b>◀ ▶</b> lùi/tiến một giây · <b>1–4</b> đổi cảnh · <b>W</b> wallpaper ·
+          <b>C</b> đồng hồ · <b>Esc</b> thoát wallpaper. URL nhận <code>?scene=hoi-an&amp;seed=…&amp;wallpaper=1&amp;clock=1</code>
+          để trỏ thẳng từ Wallpaper Engine, Lively hay một cửa sổ kiosk.
+        </span>
+      </footer>
+    </main>
+
+    <script type="module">
+      import { live, SCENES } from './scenes.js';
+      import * as almanac from '../../src/index.js';
+
+      const FIRST = [
+        'amber', 'ash', 'briar', 'cedar', 'cloud', 'coral', 'dawn', 'drift', 'ember', 'fern', 'frost', 'gale',
+        'hazel', 'ivory', 'jade', 'juniper', 'kelp', 'linen', 'maple', 'misty', 'moss', 'opal', 'pearl', 'pine',
+        'quiet', 'rain', 'rose', 'rust', 'salt', 'sage', 'slate', 'tidal',
+      ];
+      const SECOND = [
+        'bay', 'bank', 'beach', 'bluff', 'brook', 'cape', 'cliff', 'cove', 'creek', 'dune', 'fen', 'glen',
+        'harbour', 'haven', 'heron', 'isle', 'key', 'lagoon', 'marsh', 'mere', 'point', 'reef', 'rock', 'sands',
+        'shoal', 'sound', 'spit', 'strand', 'tarn', 'vale', 'wharf', 'wood',
+      ];
+      const $ = (id) => document.getElementById(id),
+        canvas = $('screen'),
+        ctx = canvas.getContext('2d'),
+        scrub = $('scrub'),
+        status = $('status');
+      $('total').textContent = Object.keys(almanac).length;
+
+      const SIZES = [480, 960],
+        SPEEDS = [0.5, 1, 2];
+      const asked = new URLSearchParams(location.search);
+      let sceneId = SCENES.some((s) => s.id === asked.get('scene')) ? asked.get('scene') : SCENES[0].id,
+        seed = asked.get('seed') || 'heron-bay-8',
+        size = SIZES.includes(+asked.get('size')) ? +asked.get('size') : 480,
+        speed = 1,
+        scene = null,
+        frame = 0,
+        playing = !matchMedia('(prefers-reduced-motion: reduce)').matches,
+        clock = 0,
+        last = performance.now(),
+        idleTimer = 0,
+        shown = new Set();
+      $('seed').value = seed;
+      $('size').textContent = `${size} px`;
+
+      const say = (text, bad = false) => {
+        status.textContent = text;
+        status.classList.toggle('bad', bad);
+      };
+
+      // one button a scene, its name and what the place is
+      for (const meta of SCENES) {
+        const li = document.createElement('li'),
+          b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.scene = meta.id;
+        b.setAttribute('aria-pressed', String(meta.id === sceneId));
+        const title = document.createElement('b');
+        title.textContent = meta.title;
+        const sub = document.createElement('span');
+        sub.textContent = meta.sub;
+        b.append(title, sub);
+        b.addEventListener('click', () => pick(meta.id));
+        li.append(b);
+        $('scenes').append(li);
+      }
+      function markScenes() {
+        for (const b of $('scenes').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.scene === sceneId));
+      }
+
+      function fit() {
+        if (!scene) return;
+        if (document.body.classList.contains('wallpaper')) {
+          const k = Math.min(innerWidth / scene.W, innerHeight / scene.H);
+          canvas.style.width = Math.max(120, Math.floor(scene.W * k)) + 'px';
+          canvas.style.height = Math.max(68, Math.floor(scene.H * k)) + 'px';
+        } else {
+          const room = canvas.closest('main').clientWidth - 6,
+            k = Math.max(1, Math.floor(room / scene.W));
+          canvas.style.width = (room < scene.W ? room : scene.W * k) + 'px';
+          canvas.style.height = 'auto';
+        }
+      }
+      addEventListener('resize', fit);
+
+      function draw() {
+        const px = scene.frame(frame);
+        ctx.putImageData(new ImageData(new Uint8ClampedArray(px.buffer, px.byteOffset, px.byteLength), scene.W, scene.H), 0, 0);
+        scrub.value = frame;
+        $('where').textContent = `${(frame / scene.FPS).toFixed(1)} s / ${scene.DUR} s`;
+        listUsed();
+      }
+
+      function listUsed() {
+        if (!scene || scene.used.size === shown.size) return;
+        const list = $('used');
+        list.querySelectorAll('li.new').forEach((li) => li.classList.remove('new'));
+        for (const name of [...scene.used].sort()) {
+          if (shown.has(name)) continue;
+          shown.add(name);
+          const li = document.createElement('li'),
+            a = document.createElement('a');
+          a.href = 'https://github.com/BlaiseLabs/procedural-almanac/blob/main/CATALOG.md#' + name.toLowerCase();
+          a.textContent = name;
+          li.className = 'new';
+          li.append(a);
+          const after = [...list.children].find((c) => c.textContent > name);
+          list.insertBefore(li, after || null);
+        }
+        $('count').textContent = scene.used.size;
+      }
+
+      function tick(now) {
+        const dt = Math.min(0.25, (now - last) / 1000);
+        last = now;
+        // a hidden tab draws nothing: the loop is pure frame(f), so it picks up exactly where it was
+        if (playing && scene && !document.hidden) {
+          clock += dt * speed;
+          const step = Math.floor(clock * scene.FPS);
+          if (step > 0) {
+            clock -= step / scene.FPS;
+            frame = (frame + step) % scene.frames;
+            draw();
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      function setPlaying(on) {
+        playing = on;
+        $('play').textContent = on ? 'Tạm dừng' : 'Chạy';
+        clock = 0;
+      }
+
+      function remember() {
+        const url = new URL(location.href);
+        url.searchParams.set('scene', sceneId);
+        url.searchParams.set('seed', seed);
+        if (size !== 480) url.searchParams.set('size', String(size));
+        else url.searchParams.delete('size');
+        history.replaceState(null, '', url);
+      }
+
+      function grow() {
+        try {
+          const t0 = performance.now();
+          scene = live(sceneId, seed, { size });
+          shown = new Set();
+          $('used').replaceChildren();
+          $('count').textContent = 0;
+          frame = Math.round(scene.opening * scene.FPS);
+          scrub.max = scene.frames - 1;
+          canvas.width = scene.W;
+          canvas.height = scene.H;
+          $('title').textContent = scene.title;
+          document.title = `${scene.title} · live wallpaper · procedural-almanac`;
+          markScenes();
+          fit();
+          draw();
+          say(
+            `${scene.title} · ${scene.sub} · hạt giống ${scene.seed} (${scene.phrase}) · dựng trong ${Math.round(performance.now() - t0)} ms`,
+          );
+          remember();
+        } catch (e) {
+          say(`Không dựng được cảnh này (${e.message}).`, true);
+        }
+      }
+
+      function pick(id) {
+        if (id === sceneId && scene) return;
+        sceneId = id;
+        grow();
+      }
+
+      // ---- the wallpaper: the picture alone; the clock, if it is on, stays
+      function setWallpaper(on) {
+        document.body.classList.toggle('wallpaper', on);
+        fit();
+        if (on) {
+          if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+          bump();
+        } else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      }
+      function bump() {
+        document.body.classList.remove('idle');
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => document.body.classList.add('idle'), 3200);
+      }
+      addEventListener('pointermove', bump);
+      addEventListener('focus', bump);
+      document.addEventListener('fullscreenchange', fit);
+
+      // ---- the clock a wallpaper earns its keep with
+      let clockTimer = 0;
+      function setClock(on) {
+        $('clock').classList.toggle('on', on);
+        $('clockToggle').setAttribute('aria-pressed', String(on));
+        clearInterval(clockTimer);
+        if (!on) return;
+        const show = () => {
+          const now = new Date();
+          $('clockTime').textContent = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+          $('clockDate').textContent = now.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' });
+        };
+        show();
+        clockTimer = setInterval(show, 1000);
+      }
+
+      $('play').addEventListener('click', () => setPlaying(!playing));
+      $('wall').addEventListener('click', () => setWallpaper(!document.body.classList.contains('wallpaper')));
+      $('clockToggle').addEventListener('click', () => setClock(!$('clock').classList.contains('on')));
+      $('speed').addEventListener('click', () => {
+        speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+        $('speed').textContent = `${speed}×`;
+      });
+      $('size').addEventListener('click', () => {
+        size = SIZES[(SIZES.indexOf(size) + 1) % SIZES.length];
+        $('size').textContent = `${size} px`;
+        grow();
+      });
+      $('seedForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const value = $('seed').value.trim();
+        if (value) {
+          seed = value;
+          grow();
+        }
+      });
+      $('random').addEventListener('click', () => {
+        seed = almanac.seedWords(FIRST, SECOND);
+        $('seed').value = seed;
+        grow();
+      });
+      scrub.addEventListener('input', () => {
+        if (!scene) return;
+        frame = +scrub.value;
+        setPlaying(false);
+        draw();
+      });
+      addEventListener('keydown', (e) => {
+        const typing = e.target.tagName === 'INPUT';
+        if (e.code === 'Escape' && document.body.classList.contains('wallpaper')) setWallpaper(false);
+        if (typing) return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          setPlaying(!playing);
+        } else if (e.code === 'ArrowRight' && scene) {
+          frame = (frame + scene.FPS) % scene.frames;
+          draw();
+        } else if (e.code === 'ArrowLeft' && scene) {
+          frame = (frame - scene.FPS + scene.frames) % scene.frames;
+          draw();
+        } else if (e.code === 'KeyW') setWallpaper(!document.body.classList.contains('wallpaper'));
+        else if (e.code === 'KeyC') setClock(!$('clock').classList.contains('on'));
+        else if (/^Digit[1-4]$/.test(e.code)) pick(SCENES[+e.code.slice(5) - 1].id);
+      });
+
+      setPlaying(playing);
+      grow();
+      if (asked.get('clock') === '1') setClock(true);
+      if (asked.get('wallpaper') === '1') setWallpaper(true);
+      requestAnimationFrame(tick);
+    </script>
+  </body>
+</html>
