@@ -9,7 +9,8 @@ sprite, không ảnh, không build step**, chỉ có almanac. Cùng một file c
   để xem ngay.
 - `format.md` — **định dạng kịch bản**: đưa file này cho mô hình ngôn ngữ khi muốn nó viết truyện mới.
 - `film.mjs` — chụp ảnh/kiểm tra trong Node: `--check`, `--still`, `--sheet`.
-- `stories/` — hai truyện mẫu tiếng Việt: `ba-chu-heo.json`, `vit-con-tim-me.json`.
+- `stories/` — ba truyện mẫu tiếng Việt: `ba-chu-heo.json`, `vit-con-tim-me.json`, `lac-long-quan-au-co.json` (rồng
+  bay, tiên có cánh, tổ trăm trứng, thuyền ra khơi).
 
 ## Chạy
 
@@ -73,8 +74,9 @@ Ba điều cần giữ khi đóng gói:
 3. `validate()` sẽ nói chính xác chỗ sai (`cast.soi.kind: "dragon" is not a kind of animal (pig, wolf, fox, mouse,
    bird, kid)`), nên vòng sửa rất ngắn: dán lại là xong.
 
-Muốn thêm loài mới (rồng, gấu, cá) thì thêm một mục vào `KINDS` trong `story.js`: một bảng số đo (thân, chân, đầu,
-mõm, tai, đuôi, dáng đi) và khoảng gen; phần vẽ dùng chung, không phải viết lại.
+Muốn thêm loài mới (gấu, cá, hươu) thì thêm một mục vào `KINDS` trong `story.js`: một bảng số đo (thân, chân, đầu,
+mõm, tai, đuôi, dáng đi) và khoảng gen; phần vẽ dùng chung, không phải viết lại. Loài **bay** (như `dragon`, `fairy`)
+cần hình riêng: chúng không bước chân mà đập cánh theo đồng hồ.
 
 ## Những gì engine vẽ
 

@@ -56,14 +56,23 @@ Mỗi nhân vật là một tên (dùng lại ở `actors`) và một loài. Lo�
 | `mouse`       | bốn chân, tai tròn, nhỏ | chuột, thỏ con, nhím                       |
 | `bird`        | hai chân, mỏ, cánh, đuôi lông | vịt, gà, chim                      |
 | `kid`         | hai chân, tóc           | em bé, bạn nhỏ                             |
+| `dragon`      | bay: mình rắn dài uốn lượn, đầu có sừng và râu, vây lưng, bốn chân móng, đuôi quạt | rồng, thủy quái |
+| `fairy`       | bay: váy dài, tóc dài, hai cánh bướm đập theo nhịp | tiên, nàng tiên, thần nhỏ |
 
 `genes` (tất cả không bắt buộc):
 
 | gene   | kiểu   | nghĩa                                                    |
 | ------ | ------ | -------------------------------------------------------- |
 | `size` | số     | cao của con vật trong khung hình, pixel (heo 30–38)      |
-| `coat` | `#rrggbb` | màu lông; phần tối/sáng/viền suy ra từ nó            |
+| `coat` | `#rrggbb` | màu lông (với `fairy`: màu váy); phần tối/sáng/viền suy ra từ nó |
 | `legs` | số     | dài chân (đơn vị thân)                                    |
+| `body` | số     | thân dài/nở ra bao nhiêu (dragon: 0.85–1.3)               |
+| `skin` | `#rrggbb` | màu da (fairy)                                         |
+| `hair` | `#rrggbb` | màu tóc (fairy)                                        |
+| `wing` | `#rrggbb` | màu cánh (fairy)                                       |
+
+`dragon` và `fairy` **bay**: chân không bước mà thân/cánh đập theo đồng hồ, và chúng luôn được vẽ sau cùng, nằm trên
+mặt đất. Con rồng dài theo tỉ lệ: `size` là chiều cao của cả hình, muốn rồng dài hơn thì tăng `body`.
 
 Bỏ trống `genes` thì engine rút gen từ hạt giống (`genomeFrom`) trong khoảng của loài: mỗi lần `seed` khác là một cá
 thể khác, cùng `seed` là y nguyên.
@@ -114,6 +123,9 @@ Không có `hills` thì engine vẽ ba lớp mặc định.
 | `flower`| `size`                                                        | hoa                            |
 | `cloud` | `size`, `y` (phần chiều cao, mặc định 0.18), `speed` (px/s trôi) | mây trên trời               |
 | `house` | `style`: `straw` \| `wood` \| `stone`, `size` (ngang, px)     | nhà rơm, nhà gỗ, nhà đá        |
+| `palm`  | `size`                                                        | dừa, cọ (nghiêng ra phía biển) |
+| `boat`  | `size`                                                        | thuyền buồm                    |
+| `nest`  | `size`, `eggs` (số trứng, 1–24), `egg` (`#rrggbb`)             | tổ trứng                       |
 
 Trường chung: `x` (pixel trong khung, 0 = mép trái; âm và lớn hơn `size` vẫn được), `y` (phần chiều cao, mặc định
 bằng `ground`), `lift` (nhấc lên thêm, px), `seed` (đổi dáng cây/đá), `flip` (lật ngang), `sway` (cây nghiêng theo
@@ -134,6 +146,12 @@ trong cảnh có máy quay đứng yên, hoặc tính `x` theo `camera` bạn mu
 | `at`  | đường đi: các mốc `{ "t": giây, "x": pixel }`, `t` phải tăng dần; đi từ trái sang phải thì quay mặt phải, ngược lại quay mặt trái |
 | `lane`| nâng lên (px, âm = xuống) để xếp lớp: ai `lane` lớn hơn thì đứng sau                        |
 | `size`| cao (px); mặc định gen của loài                                             |
+| `layer` | thứ tự giữa những thứ **bay** với nhau: số lớn hơn thì ở trên (mặc định 0)                |
+| `hover` | bay lên xuống bao nhiêu px (nhịp riêng, nhẹ)                                             |
+| `glow`  | quầng sáng quanh nhân vật, bán kính px (đom đóm, tiên, rồng lửa)                          |
+| `crowd` | số bản sao của cùng nhân vật, đi cạnh nhau (tối đa 24): một trăm đứa trẻ là `crowd: 9`     |
+| `spread`| khoảng cách giữa các bản sao trong `crowd`, px (mặc định 14)                              |
+| `coats` | danh sách `#rrggbb`: các bản sao trong `crowd` mặc màu lần lượt                            |
 
 Chân bước theo **quãng đường đã đi** (`strideRate`), không theo đồng hồ: đi nhanh thì bước mau, đứng yên thì đứng yên
 — không trượt chân.
@@ -152,6 +170,8 @@ Nhân vật và props được vẽ xen theo `y` rồi theo `x`, nên ai ở dư
 | `fireflies`  | `count`          | đom đóm nhấp nháy (có quầng sáng) |
 | `fog`        | `density`        | sương mù cuộn                     |
 | `lightning`  | —                | sét (dùng chung với `weather.kind: "storm"`) |
+| `bubbles`    | `count`          | bong bóng nước nổi lên            |
+| `sparks`     | `count`, `colour`| đốm sáng bay lên (trứng nở, phép thuật) |
 
 `weather: { "kind": "rain" }` tự thêm mưa; `"storm"` thêm mưa to + sét + gió; `"snow"` thêm tuyết; `"fog"` thêm sương.
 
@@ -202,4 +222,13 @@ python3 -m http.server 8000     # rồi mở http://localhost:8000/examples/stor
 node examples/storybook/film.mjs --check
 node examples/storybook/film.mjs --sheet sheet.png --at 3,12,30,55
 node examples/storybook/film.mjs --story stories/vit-con-tim-me.json --still 12 vit.png
+node examples/storybook/film.mjs --story stories/lac-long-quan-au-co.json --still 24 rong.png
 ```
+
+## Ba truyện mẫu
+
+| file | truyện | có gì |
+| ---- | ------ | ----- |
+| `stories/ba-chu-heo.json` | Ba chú heo con | nhà rơm/gỗ/đá, sói, bão, sét, mưa |
+| `stories/vit-con-tim-me.json` | Vịt con tìm mẹ | mặt hồ, sương, đêm, đom đóm, mưa |
+| `stories/lac-long-quan-au-co.json` | Lạc Long Quân · Âu Cơ | rồng bay, tiên có cánh và quầng sáng, tổ trăm trứng, thuyền, dừa, đám đông trẻ, bong bóng, đốm sáng |

@@ -80,6 +80,31 @@ const KINDS = {
     coat: '#e8c15a',
     genes: { size: [16, 24], coat: ['#e8c15a', '#d9b04a', '#f0d07a'], legs: [2.1, 2.6] },
   },
+  dragon: {
+    stance: 'air',
+    body: [10.5, 1],
+    leg: 0,
+    head: 1.5,
+    snout: 0,
+    ear: 'none',
+    tail: 'none',
+    coat: '#e2b04a',
+    genes: { size: [44, 70], body: [0.85, 1.3], coat: ['#e2b04a', '#d9a03c', '#f0c264', '#cf9440'] },
+  },
+  fairy: {
+    stance: 'air',
+    body: [1, 1],
+    leg: 0,
+    head: 0.8,
+    snout: 0,
+    ear: 'none',
+    tail: 'none',
+    skin: '#f6d9b8',
+    hair: '#2c2233',
+    wing: '#efe9ff',
+    coat: '#f4e0f0',
+    genes: { size: [32, 50], coat: ['#f4e0f0', '#e7d2f0', '#f9ebd6', '#d8e8f6'], skin: ['#f6d9b8', '#eccda9'] },
+  },
   kid: {
     stance: 'biped',
     body: [2.6, 3.4],
@@ -129,8 +154,19 @@ const DEFAULT_PALETTE = {
   star: '#e8eefc',
 };
 
-const PROP_KINDS = new Set(['tree', 'bush', 'house', 'rock', 'cloud', 'flower']);
-const EFFECT_KINDS = new Set(['rain', 'snow', 'petals', 'fireflies', 'dust', 'leaves', 'fog', 'lightning']);
+const PROP_KINDS = new Set(['tree', 'bush', 'house', 'rock', 'cloud', 'flower', 'palm', 'boat', 'nest']);
+const EFFECT_KINDS = new Set([
+  'rain',
+  'snow',
+  'petals',
+  'fireflies',
+  'dust',
+  'leaves',
+  'fog',
+  'lightning',
+  'bubbles',
+  'sparks',
+]);
 const HOUSE_STYLES = new Set(['straw', 'wood', 'stone']);
 
 // ---------------------------------------------------------------------------------------------- colours, buffers
@@ -190,6 +226,8 @@ function painter(B, k, ax, ay) {
 // One animal at one moment of its walk, facing right, its feet on (ax, ay). Built as a sprite (drawn once, blitted per
 // frame, flipped when walking left) -- the picture is the same whether it is played, scrubbed or filmed.
 function figureAt(kind, genes, phase, inkHex) {
+  if (kind === 'dragon') return dragonAt(genes, phase, inkHex);
+  if (kind === 'fairy') return fairyAt(genes, phase, inkHex);
   const K = KINDS[kind],
     T = almanac.tones(rgbOf(genes.coat)),
     base = pack(T.base),
@@ -321,6 +359,252 @@ function figureAt(kind, genes, phase, inkHex) {
 
   almanac.outlinePass(B, ink);
   return { w: W, h: H, px: B.px, ax: (W - 1) / 2, ay: H - 2, stride: 0.55 * legLen * k, lift: 0.34 * legLen * k };
+}
+
+// A dragon of the east, seen from the side: a long thin serpentine body that ripples through the air, a fan of a tail,
+// a horned head with a whisker, four short clawed legs and a ridge of spines along its back. It flies, so its twelve
+// pictures are a ripple, not a walk. Everything is sized so the silhouette reads small: a thin wave, a big head, a fan.
+function dragonAt(genes, phase, inkHex) {
+  const coat = genes.coat,
+    T = almanac.tones(rgbOf(coat)),
+    base = pack(T.base),
+    light = pack(T.light),
+    dark = pack(T.dark),
+    belly = shadeOf(coat, 0.28),
+    ink = hex(inkHex),
+    len = 13 * (genes.body || 1),
+    amp = 1.15,
+    headR = 1.1,
+    reach = 3.9, // the snout, the whisker and the tail's fan stand past the body's own ends
+    unitsH = 2 * (0.85 + amp) + 1.1,
+    half = len / 2 + reach,
+    k = genes.size / unitsH,
+    W = Math.ceil(half * 2 * k) + 3,
+    H = Math.ceil(unitsH * k) + 3,
+    B = buffer(W, H),
+    p = painter(B, k, W >> 1, H - 2),
+    cy = unitsH * 0.46,
+    N = 30,
+    spine = [];
+
+  // the body, from tail to head: a wave that settles toward the head, thinning to the tail and thick to the chest
+  for (let i = 0; i <= N; i++) {
+    const u = i / N;
+    spine.push({
+      x: -len / 2 + u * len,
+      y: cy + Math.sin(u * 7 + phase) * amp * (1 - 0.62 * u) + u * 0.5,
+      r: 0.28 + 0.42 * Math.sin(Math.PI * Math.min(1, 0.1 + u * 0.94)),
+    });
+  }
+  const head = spine[N],
+    tail = spine[0],
+    along = (u) => spine[Math.round(u * N)];
+
+  // the tail's fan: three pointed fins, pale, spread like a fish's
+  for (let f = -1; f <= 1; f++)
+    p.poly(
+      [
+        [tail.x + 0.1, tail.y + tail.r * 0.6],
+        [tail.x - 2.2, tail.y + f * 1.35 + 0.2],
+        [tail.x - 0.1, tail.y - tail.r * 0.6],
+      ],
+      f ? light : base,
+    );
+
+  // the far legs, then the body over them
+  const leg = (at, colour) => {
+    p.cap(at.x, at.y - at.r * 0.5, 0.22, at.x - 0.1, at.y - at.r - 0.95, 0.17, colour);
+    for (let c = -1; c <= 1; c++)
+      p.line(at.x - 0.1, at.y - at.r - 0.95, at.x + 0.35 + c * 0.1, at.y - at.r - 1.15 + c * 0.12, colour);
+  };
+  leg(along(0.3), dark);
+  leg(along(0.72), dark);
+
+  for (const q of spine) p.ell(q.x, q.y, q.r, q.r, base);
+  // a pale belly along the body's underside, and a lighter ridge along its top
+  for (const q of spine) p.ell(q.x, q.y - q.r * 0.55, q.r * 0.55, q.r * 0.3, belly);
+  for (const q of spine) p.ell(q.x, q.y + q.r * 0.6, q.r * 0.4, q.r * 0.2, light);
+
+  // the ridge of spines: small, and getting smaller toward the tail
+  for (let i = 3; i < N - 4; i += 2) {
+    const q = spine[i],
+      sh = 0.5 + 0.45 * (i / N);
+    p.poly(
+      [
+        [q.x - q.r * 0.35, q.y + q.r * 0.7],
+        [q.x - q.r * 0.55, q.y + q.r + sh],
+        [q.x + q.r * 0.25, q.y + q.r * 0.7],
+      ],
+      dark,
+    );
+  }
+
+  // the head: a jaw, a snout, a horn swept back, a whisker, an eye, and a mouth line
+  const hy = head.y,
+    hx = head.x;
+  p.ell(hx + 0.1, hy + 0.05, headR * 1.1, headR * 0.95, base);
+  p.cap(hx + headR * 0.6, hy - 0.05, headR * 0.62, hx + headR * 2.1, hy - 0.3, headR * 0.36, base);
+  p.cap(hx + headR * 0.7, hy - 0.35, headR * 0.3, hx + headR * 2.0, hy - 0.55, headR * 0.22, belly);
+  // horn, and a smaller one behind it
+  p.poly(
+    [
+      [hx - headR * 0.35, hy + headR * 0.55],
+      [hx - headR * 0.55, hy + headR * 1.35],
+      [hx + headR * 0.15, hy + headR * 0.6],
+    ],
+    shadeOf(coat, -0.45),
+  );
+  p.poly(
+    [
+      [hx - headR * 0.95, hy + headR * 0.3],
+      [hx - headR * 1.3, hy + headR * 1.0],
+      [hx - headR * 0.5, hy + headR * 0.45],
+    ],
+    shadeOf(coat, -0.45),
+  );
+  // the whisker, curling forward off the snout
+  p.line(hx + headR * 1.9, hy - headR * 0.2, hx + headR * 2.6, hy + headR * 0.9, dark);
+  p.line(hx + headR * 2.6, hy + headR * 0.9, hx + headR * 3.4, hy + headR * 0.7, dark);
+  // a beard under the jaw, a mouth line, and an eye with a catchlight
+  p.poly(
+    [
+      [hx + headR * 0.3, hy - headR * 0.4],
+      [hx - headR * 0.2, hy - headR * 1.25],
+      [hx + headR * 0.75, hy - headR * 0.55],
+    ],
+    shadeOf(coat, -0.3),
+  );
+  p.line(hx + headR * 0.8, hy - headR * 0.42, hx + headR * 1.95, hy - headR * 0.5, ink);
+  p.ell(hx + headR * 0.62, hy + headR * 0.3, 0.22, 0.22, ink);
+  p.px(hx + headR * 0.7, hy + headR * 0.38, 0xfff8f2e8);
+
+  // the near legs, over the body
+  leg(along(0.36), shadeOf(coat, -0.06));
+  leg(along(0.78), shadeOf(coat, -0.06));
+
+  almanac.outlinePass(B, ink);
+  // (an anchor has to be a whole pixel: a stamp at a fractional one lands between pixels and draws nothing)
+  return { w: W, h: H, px: B.px, ax: W >> 1, ay: H - 2, stride: 1, air: true };
+}
+
+// A fairy, seen from the side: two pale wings behind her that beat (dithered, so they read as thin), a long dress that
+// widens to a scalloped hem, long hair to her waist, and a face. She floats, so her twelve pictures are a beat of wings.
+function fairyAt(genes, phase, inkHex) {
+  const coat = genes.coat,
+    skin = genes.skin || KINDS.fairy.skin,
+    hair = genes.hair || KINDS.fairy.hair,
+    wing = genes.wing || KINDS.fairy.wing,
+    T = almanac.tones(rgbOf(coat)),
+    base = pack(T.base),
+    light = pack(T.light),
+    dark = pack(T.dark),
+    skinC = hex(skin),
+    skinDark = shadeOf(skin, -0.16),
+    hairC = hex(hair),
+    hairLight = shadeOf(hair, 0.16),
+    wingC = hex(wing),
+    ink = hex(inkHex),
+    unitsH = 6.1,
+    k = genes.size / unitsH,
+    W = Math.ceil(4.4 * k) + 5,
+    H = Math.ceil(unitsH * k) + 3,
+    B = buffer(W, H),
+    p = painter(B, k, W / 2, H - 2),
+    beat = Math.sin(phase),
+    hem = 0.85 + beat * 0.05,
+    waist = 2.75,
+    headY = 4.75,
+    headR = 0.7;
+
+  // the wings: two pale butterfly wings behind her, beating, drawn solid and outlined like everything else here (a
+  // dithered wing turns to grey wool at forty pixels tall). Each is an upper and a lower lobe with a notch between them,
+  // the upper one lighter where the light catches it.
+  const wingSolid = hex(genes.wing || KINDS.fairy.wing),
+    wingLight = shadeOf(genes.wing || KINDS.fairy.wing, 0.4),
+    wingDark = shadeOf(genes.wing || KINDS.fairy.wing, -0.24),
+    spread = 0.75 + 0.22 * beat,
+    root = [-0.1, 3.55];
+  p.poly(
+    [
+      [root[0], root[1] + 0.15],
+      [root[0] - 1.9 * spread, root[1] + 1.75 * spread],
+      [root[0] - 2.5 * spread, root[1] + 0.55 * spread],
+      [root[0] - 0.9 * spread, root[1] - 0.15],
+    ],
+    wingSolid,
+  );
+  p.poly(
+    [
+      [root[0] - 0.75 * spread, root[1] - 0.1],
+      [root[0] - 2.1 * spread, root[1] - 0.95 * spread],
+      [root[0] - 1.55 * spread, root[1] - 2.05 * spread],
+      [root[0] - 0.35 * spread, root[1] - 1.0],
+    ],
+    wingSolid,
+  );
+  p.poly(
+    [
+      [root[0] - 0.2, root[1] + 0.7],
+      [root[0] - 1.35 * spread, root[1] + 1.45 * spread],
+      [root[0] - 1.45 * spread, root[1] + 0.8 * spread],
+      [root[0] - 0.5 * spread, root[1] + 0.25],
+    ],
+    wingLight,
+  );
+  p.cap(root[0] - 0.05, root[1] + 0.4, 0.1, root[0] - 0.6 * spread, root[1] + 1.9 * spread, 0.07, wingDark);
+  p.cap(root[0] - 0.05, root[1] - 0.2, 0.1, root[0] - 0.55 * spread, root[1] - 1.9 * spread, 0.07, wingDark);
+
+  // the long hair behind the head and down her back
+  p.cap(0.1, headY + headR * 0.2, headR * 0.92, -0.5, waist - 0.1, headR * 0.5, hairC);
+  p.cap(-0.5, waist - 0.1, headR * 0.5, -0.85, hem + 0.45, headR * 0.28, hairC);
+  p.cap(-0.2, waist + 0.4, headR * 0.2, -0.55, hem + 0.1, headR * 0.12, hairLight);
+
+  // the dress: a wide skirt with a scalloped hem, a lighter panel on the lit side, folds in shadow
+  p.poly(
+    [
+      [-0.5, waist + 0.15],
+      [0.5, waist + 0.15],
+      [1.4, hem],
+      [-1.4, hem],
+    ],
+    base,
+  );
+  for (let i = -1; i <= 1; i++) p.ell(i * 0.9, hem, 0.48, 0.2, base);
+  p.poly(
+    [
+      [-0.48, waist + 0.1],
+      [-0.05, waist + 0.1],
+      [-0.32, hem - 0.05],
+      [-1.28, hem - 0.05],
+    ],
+    light,
+  );
+  p.line(-0.15, waist, -0.7, hem - 0.15, dark);
+  p.line(0.28, waist, 0.72, hem - 0.15, dark);
+
+  // the sash, and the body above it
+  p.cap(-0.5, waist + 0.12, 0.2, 0.55, waist + 0.12, 0.2, dark);
+  p.cap(0, waist, 0.32, 0.05, waist + 1.1, 0.28, base);
+
+  // the arms: one down, one raised a little, as if greeting the sea
+  p.cap(0.32, waist + 0.95, 0.14, 0.9, waist + 0.4, 0.12, skinC);
+  p.cap(-0.28, waist + 0.95, 0.14, -0.85, waist + 1.4, 0.12, skinDark);
+  p.ell(0.93, waist + 0.37, 0.14, 0.14, skinC);
+  p.ell(-0.89, waist + 1.42, 0.13, 0.13, skinDark);
+
+  // the head, the hair over it, and the face
+  p.ell(0.08, headY, headR, headR * 1.05, skinC);
+  p.ell(-0.16, headY + headR * 0.4, headR * 1.16, headR * 0.8, hairC);
+  p.ell(-0.62, headY + headR * 0.55, headR * 0.5, headR * 0.42, hairC);
+  p.cap(-0.46, headY + headR * 0.3, headR * 0.5, -0.62, headY - headR * 1.0, headR * 0.3, hairC);
+  p.px(0.32, headY + 0.1, ink);
+  p.px(0.4, headY + 0.06, 0xfff8f2e8);
+  p.px(0.36, headY - 0.05, ink);
+  p.px(0.5, headY - 0.34, shadeOf(skin, -0.32));
+
+  almanac.outlinePass(B, ink);
+  // (an anchor has to be a whole pixel: a stamp at a fractional one lands between pixels and draws nothing)
+  return { w: W, h: H, px: B.px, ax: W >> 1, ay: H - 2, stride: 1, air: true };
 }
 
 // a kind's twelve pictures at one pair of genes, each facing right
@@ -475,6 +759,153 @@ function buildCloud(rng, size, pal) {
   }
   almanac.shadeEllipse(B, w / 2, h * 0.78, w * 0.44, h * 0.24, 0.94);
   almanac.fillEllipse(B, w / 2, h * 0.9, w * 0.4, h * 0.14, shade);
+  return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
+}
+
+// a coconut palm: a trunk that leans out over the sand, a crown of fronds that droop, a few coconuts
+function buildPalm(rng, size, pal) {
+  const w = Math.max(16, Math.round(size * 0.9)),
+    h = Math.max(22, Math.round(size * 1.35)),
+    B = buffer(w, h),
+    ink = hex(pal.ink),
+    leaf = hex(pal.leaf),
+    leafLight = shadeOf(pal.leaf, 0.16),
+    leafDark = shadeOf(pal.leaf, -0.28),
+    lean = Math.round(size * (0.16 + rng.next() * 0.1)),
+    topX = w * 0.42 + lean,
+    topY = Math.round(h * 0.24),
+    footY = h - 2;
+  almanac.barkTrunk(
+    B,
+    w * 0.42,
+    topY,
+    footY,
+    Math.max(2, Math.round(size * 0.075)),
+    [shadeOf(pal.bark, -0.25), hex(pal.bark)],
+    lean,
+  );
+  // fronds: six tapered arms from the crown, drooping as they go
+  for (let i = 0; i < 6; i++) {
+    const a = -Math.PI * 0.92 + (i / 5) * Math.PI * 0.84,
+      len = size * (0.42 + rng.next() * 0.14),
+      ex = topX + Math.cos(a) * len,
+      ey = topY + Math.sin(a) * len * 0.55 + len * 0.28;
+    almanac.capsuleSteps(topX, topY, size * 0.075, ex, ey, size * 0.03, (x, y, r) =>
+      almanac.fillEllipse(B, x, y, r, r * 0.8, i % 2 ? leaf : leafDark),
+    );
+    almanac.capsuleSteps(
+      topX,
+      topY - 1,
+      size * 0.035,
+      ex * 0.92 + topX * 0.08,
+      ey * 0.92 + topY * 0.08,
+      size * 0.018,
+      (x, y, r) => almanac.fillEllipse(B, x, y, r, r, leafLight),
+    );
+  }
+  for (let i = 0; i < 3; i++)
+    almanac.fillEllipse(
+      B,
+      topX - 2 + i * 2.4,
+      topY + 2.4 + (i % 2) * 1.6,
+      size * 0.045,
+      size * 0.045,
+      shadeOf(pal.bark, 0.1),
+    );
+  almanac.outlinePass(B, ink);
+  return { w, h, px: B.px, ax: Math.round(w * 0.34), ay: h - 2 };
+}
+
+// a boat: a hull with a raised prow, a mast and a sail, seen from the side on the water
+function buildBoat(rng, size, pal) {
+  const w = Math.max(28, Math.round(size * 1.7)),
+    h = Math.max(20, Math.round(size * 1.05)),
+    B = buffer(w, h),
+    ink = hex(pal.ink),
+    hull = hex(pal.wood),
+    hullDark = shadeOf(pal.wood, -0.28),
+    sailC = hex(pal.cloud),
+    sailShade = shadeOf(pal.cloud, -0.12),
+    deckY = Math.round(h * 0.62),
+    prow = w - 2,
+    stern = 3;
+  // the hull: a shallow bowl with a prow that lifts
+  almanac.polygonRows(
+    [
+      [stern, deckY],
+      [w * 0.34, deckY - 2],
+      [prow - 2, deckY - 5],
+      [prow, deckY - 1],
+      [w * 0.5, deckY + Math.round(h * 0.2)],
+      [stern + 2, deckY + Math.round(h * 0.16)],
+    ],
+    h,
+    (y, xa, xb) => {
+      if (xb >= xa) B.px.fill(hull, y * B.w + Math.max(0, xa), y * B.w + Math.min(B.w - 1, xb) + 1);
+    },
+  );
+  fillRect(B, Math.round(w * 0.1), deckY + 2, Math.round(w * 0.62), deckY + 3, hullDark);
+  fillRect(B, 2, deckY, prow - 2, deckY, ink);
+  // the mast and the sail
+  const mastX = Math.round(w * 0.52),
+    mastTop = Math.round(h * 0.08);
+  fillRect(B, mastX, mastTop, mastX + Math.max(1, Math.round(size * 0.04)), deckY, hullDark);
+  almanac.polygonRows(
+    [
+      [mastX + 1, mastTop + 2],
+      [w * 0.9, deckY - 4],
+      [mastX + 1, deckY - 3],
+    ],
+    h,
+    (y, xa, xb) => {
+      if (xb >= xa) B.px.fill(sailC, y * B.w + Math.max(0, xa), y * B.w + Math.min(B.w - 1, xb) + 1);
+    },
+  );
+  for (let y = mastTop + 4; y < deckY - 4; y += 3) fillRect(B, mastX + 2, y, Math.round(w * 0.9) - 2, y, sailShade);
+  almanac.outlinePass(B, ink);
+  return { w, h, px: B.px, ax: Math.round(w * 0.46), ay: deckY + 3 };
+}
+
+// a nest of eggs: a bowl of woven straw with the eggs standing in it, the back row first
+function buildNest(rng, size, pal, p) {
+  const eggs = Math.max(1, Math.min(24, Math.round(p.eggs || 9))),
+    w = Math.max(22, Math.round(size * 1.75)),
+    h = Math.max(14, Math.round(size * 0.95)),
+    B = buffer(w, h),
+    ink = hex(pal.ink),
+    straw = hex(pal.straw),
+    strawDark = shadeOf(pal.straw, -0.2),
+    eggC = hex(p.egg || '#fdf3dd'),
+    eggRim = shadeOf(p.egg || '#fdf3dd', -0.3),
+    eggShade = shadeOf(p.egg || '#fdf3dd', -0.14),
+    eggSpot = shadeOf(p.egg || '#fdf3dd', -0.42),
+    rx = size * 0.17,
+    ry = size * 0.22,
+    midY = Math.round(h * 0.5),
+    rows = eggs > 8 ? 3 : eggs > 4 ? 2 : 1;
+  let left = eggs;
+  for (let row = 0; row < rows; row++) {
+    const n = Math.ceil(left / (rows - row)),
+      y = midY - row * size * 0.19,
+      spreadX = size * 0.52 * (1 - row * 0.2);
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1),
+        x = w / 2 + (t - 0.5) * 2 * spreadX;
+      // each egg its own rim, so a clutch of them reads as eggs and not as one white lump
+      almanac.fillEllipse(B, x, y, rx + 0.6, ry + 0.6, eggRim);
+      almanac.fillEllipse(B, x, y, rx, ry, eggC);
+      almanac.fillEllipse(B, x - rx * 0.25, y + ry * 0.38, rx * 0.6, ry * 0.42, eggShade);
+      almanac.fillEllipse(B, x + rx * 0.18, y - ry * 0.18, rx * 0.5, ry * 0.42, eggC);
+      if (rng.next() > 0.4) B.px[Math.round(y - ry * 0.2) * w + Math.round(x + rx * 0.3)] = eggSpot;
+      if (rng.next() > 0.6) B.px[Math.round(y + ry * 0.2) * w + Math.round(x - rx * 0.2)] = eggSpot;
+    }
+    left -= n;
+  }
+  // the bowl in front, so the eggs sit in it
+  almanac.fillEllipse(B, w / 2, midY + size * 0.24, size * 0.8, size * 0.3, straw);
+  almanac.fillEllipse(B, w / 2, midY + size * 0.2, size * 0.7, size * 0.18, strawDark);
+  for (let x = Math.round(w * 0.16); x < w * 0.84; x += 3) B.px[Math.round(midY + size * 0.3) * w + x] = strawDark;
+  almanac.outlinePass(B, ink);
   return { w, h, px: B.px, ax: w >> 1, ay: h - 2 };
 }
 
@@ -651,6 +1082,7 @@ export function storybook(script, o = {}) {
     particleField,
     fall,
     hover,
+    rise,
     wrapAround,
     fogBanks,
     lightningFlash,
@@ -682,8 +1114,8 @@ export function storybook(script, o = {}) {
 
   const SC = W / 480; // the script's sizes are written at 480 wide; a bigger picture is the same picture, larger
 
-  function sheetFor(who, size) {
-    const key = `${who}|${size || ''}`;
+  function sheetFor(who, size, coat) {
+    const key = `${who}|${size || ''}|${coat || ''}`;
     if (sheets.has(key)) return sheets.get(key);
     const spec = cast[who],
       kind = spec.kind,
@@ -695,6 +1127,7 @@ export function storybook(script, o = {}) {
         ...(spec.genes || {}),
         ...(spec.genes && spec.genes.size ? { size: spec.genes.size * SC } : {}),
         ...(size ? { size: size * SC } : {}),
+        ...(coat ? { coat } : {}),
       };
     const sheet = figureSheet(kind, genes, inkHex);
     sheets.set(key, { ...sheet, genes, kind });
@@ -712,6 +1145,9 @@ export function storybook(script, o = {}) {
     else if (kind === 'rock') s = buildRock(rng, size * 0.7, pal);
     else if (kind === 'flower') s = buildFlower(rng, size, pal);
     else if (kind === 'cloud') s = buildCloud(rng, size, pal);
+    else if (kind === 'palm') s = buildPalm(rng, size, pal);
+    else if (kind === 'boat') s = buildBoat(rng, size, pal);
+    else if (kind === 'nest') s = buildNest(rng, size, pal, p);
     else s = buildHouse(p.style || 'straw', rng, size, pal);
     sprites.set(key, s);
     return s;
@@ -882,6 +1318,7 @@ export function storybook(script, o = {}) {
 
     // ---------------------------------------------------------------- what stands on it, far to near
     const drawn = [],
+      lights = [],
       view = { w: W, h: H, px: frame };
     for (const p of scene.props || []) {
       if (p.kind === 'cloud') continue;
@@ -899,14 +1336,31 @@ export function storybook(script, o = {}) {
       });
     }
     for (const a of scene.actors || []) {
-      const sheet = sheetFor(a.who, a.size),
+      const coats = a.coats && a.coats.length ? a.coats : null,
+        sheet = sheetFor(a.who, a.size, coats && coats[0]),
         track = trackAt(a.at, local),
-        phase = track.dist * strideRate(sheet.stride),
-        idx = ((Math.round((phase / TAU) * PHASES) % PHASES) + PHASES) % PHASES,
-        sprite = sheet.frames[idx],
-        x = (track.x - cam.x) * cam.zoom + W / 2,
-        y = groundShare * H + (a.lane || 0) * cam.zoom;
-      drawn.push({ y, draw: () => blitSprite(view, sprite, x, y, track.dir < 0) });
+        air = !!sheet.frames[0].air, // wings beat with the clock; feet step with the distance walked
+        n = Math.max(1, Math.min(24, Math.round(a.crowd || 1))),
+        spread = (a.spread === undefined ? 14 : a.spread) * cam.zoom,
+        baseX = (track.x - cam.x) * cam.zoom + W / 2,
+        baseY = groundShare * H + (a.lane || 0) * cam.zoom;
+      for (let i = 0; i < n; i++) {
+        const off = (i - (n - 1) / 2) * spread,
+          hover = a.hover ? Math.sin(local * 1.7 + i * 1.3 + (a.phase || 0)) * a.hover * cam.zoom : 0,
+          phase = air ? local * 2.1 + i * 0.9 + (a.phase || 0) : track.dist * strideRate(sheet.stride) + i * 2.1,
+          idx = ((Math.round((phase / TAU) * PHASES) % PHASES) + PHASES) % PHASES,
+          own = coats ? sheetFor(a.who, a.size, coats[i % coats.length]) : sheet,
+          sprite = own.frames[idx],
+          x = baseX + off,
+          y = baseY + hover - (i % 2) * 1.2 * cam.zoom;
+        drawn.push({
+          // a thing in the air is over the land, not behind it; `layer` orders one flyer against another
+          y: (air ? 1e6 : 0) + (a.layer || 0) * 1000 + y,
+          draw: () => blitSprite(view, sprite, x, y, track.dir < 0),
+        });
+        if (a.glow)
+          lights.push({ x, y: y - sprite.h * 0.55, r: a.glow * cam.zoom, k: 0.42 + 0.12 * Math.sin(local * 1.6 + i) });
+      }
     }
     drawn.sort((p, q) => p.y - q.y);
     for (const d of drawn) d.draw();
@@ -919,7 +1373,6 @@ export function storybook(script, o = {}) {
       effects.push({ kind: 'rain', count: Math.round(150 * strength) });
     if (weatherKind === 'snow') effects.push({ kind: 'snow', count: Math.round(90 * strength) });
     if (weatherKind === 'fog') effects.push({ kind: 'fog' });
-    const lights = [];
     const buf = { w: W, h: H, px: frame };
 
     for (const e of effects) {
@@ -946,6 +1399,8 @@ export function storybook(script, o = {}) {
         else if (e.kind === 'leaves') q = fall(q0, ageT, { speed: 34, wind: 20, sway: [1.1, 16] });
         else if (e.kind === 'fireflies')
           q = hover(q0, ageT, { x: [0.7, 10], y: [0.5, 6], camera: cam.x * 0.2, byDepth: true });
+        else if (e.kind === 'bubbles') q = rise(q0, ageT, { speed: 26, spread: 18, sway: [2.2, 5] });
+        else if (e.kind === 'sparks') q = rise(q0, ageT, { speed: 34, spread: 30, sway: [3.2, 9] });
         else q = hover(q0, ageT, { x: [0.3, 4], y: [0.25, 3], camera: cam.x * 0.1 });
         // a particle law is linear in dt, so a moment can be reached in one step -- and one step may be many
         // screens' worth of falling: wrapping it by modulo keeps it in view however far it has come
@@ -962,6 +1417,15 @@ export function storybook(script, o = {}) {
           if (b > 0.35) {
             frame[y * W + x] = mixPacked(frame[y * W + x], hex('#fff0a8'), clamp(b));
             lights.push({ x, y, r: 16, k: 0.45 * b });
+          }
+        } else if (e.kind === 'bubbles') {
+          frame[y * W + x] = mixPacked(frame[y * W + x], hex('#cdeaf7'), 0.7);
+          if (x + 1 < W && q0.s > 0.55) frame[y * W + x + 1] = mixPacked(frame[y * W + x + 1], hex('#f2fbff'), 0.55);
+        } else if (e.kind === 'sparks') {
+          const b = twinkle(t * 5, q0.p, 0.6);
+          if (b > 0.25) {
+            frame[y * W + x] = mixPacked(frame[y * W + x], hex(e.colour || '#ffd98a'), clamp(0.4 + b));
+            if (b > 0.8) lights.push({ x, y, r: 10, k: 0.3 });
           }
         } else {
           frame[y * W + x] = mixPacked(frame[y * W + x], e.kind === 'snow' ? hex('#ffffff') : petal, 0.85);

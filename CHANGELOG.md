@@ -7,6 +7,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `examples/storybook/`: two more kinds of character, `dragon` (a serpentine body that ripples through the air, horned
+  head, whisker, ridge of spines, four clawed legs) and `fairy` (a long dress, long hair, butterfly wings that beat, a
+  glow); three more props, `palm`, `boat` and `nest` (a bowl of straw with `eggs` in it); two more effects, `bubbles` and
+  `sparks`; and actors that can fly (`layer`, `hover`, `glow`) or come in a crowd (`crowd`, `spread`, `coats`). The
+  story: `stories/lac-long-quan-au-co.json`, Lac Long Quan and Au Co in eight scenes -- the dragon of the sea, the fairy
+  of the mountains, the hundred eggs, and the fifty children who go with each.
+
 - `examples/storybook/`: a story written as one JSON file -- a cast of animals with their genes, a list of scenes, a
   line of narration and a time of day for each -- drawn as a pixel film by the almanac alone. `storybook(script, o)`
   gives a seekable `frame(f)` (the same picture whether played, scrubbed or filmed), `validate(script)` answers a bad
