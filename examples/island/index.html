@@ -404,7 +404,11 @@
           const step = Math.floor(clock * scene.FPS);
           if (step > 0) {
             clock -= step / scene.FPS;
-            f = (f + step) % scene.frames;
+            // a replay opens where loading the page does: the island whole, in daylight. The seed and its growth stay a
+            // drag of the timeline away, and the film never restarts on the bare seed by itself.
+            const opens = Math.round(scene.opening * scene.FPS);
+            f += step;
+            if (f >= scene.frames) f = opens + ((f - opens) % Math.max(1, scene.frames - opens));
             draw();
           }
         }
